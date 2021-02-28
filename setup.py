@@ -19,6 +19,7 @@ setup(
         'test': ['pytest','pytest-asyncio']
     },
     entry_points = {
-        'pyri.plugins.sandbox_functions': ['pyri-robotics-sandbox-functions=pyri.robotics.sandbox_functions:get_sandbox_functions_factory']
+        'pyri.plugins.sandbox_functions': ['pyri-robotics-sandbox-functions=pyri.robotics.sandbox_functions:get_sandbox_functions_factory'],
+        'pyri.plugins.device_type_adapter': ['pyri-robotics-type-adapter = pyri.robotics.device_type_adapter:get_device_type_adapter_factory'],
     }
 )
