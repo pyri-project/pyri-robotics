@@ -1,0 +1,21 @@
+#Service to provide interface to RR-webBrowser-plugin-jogJointSpace
+service experimental.pluginJogJointSpace
+
+stdver 0.14.3
+
+object JogJointSpace
+    function void connect2robot(string url_robot)
+    function void jog_joints(int32 q_i, int32 sign)
+    function void jog_joints_with_limits(double[] joint_position, double[] max_velocity,bool wait)
+    function void jog_joints_gamepad(double[] joint_speed_constants)
+    function void jog_joints_zeros()
+    function void jog_joints_to_angles(double[] joint_position)
+    function void jog_joints2(int32 q_i, int32 sign)
+    function void jog_joints3(int32 q_i, int32 sign)
+    function void stop_joints()
+
+    # For blockly
+    function void jog_joints_to_angles_relative(double[] diff_joint_position, double speed_perc)
+    function void jog_joint_to_angle(int32 q_i, double position, double speed_perc)
+    function void jog_joints_to_angles2(double[] joint_position, double speed_perc)
+end
