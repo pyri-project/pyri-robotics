@@ -49,7 +49,7 @@ class Robot_TypeAdapter(PyriDeviceTypeAdapter):
             display_flags ["pyri_internal_error"]
 
         p_value = PyriDeviceTypeAdapterExtendedState(
-            "com.robotraconteur.robotics.robot.RobotInfo",
+            "com.robotraconteur.robotics.robot.RobotState",
             display_flags,
             RR.VarValue(robot_state, 'com.robotraconteur.robotics.robot.RobotState'), 
             ready, 
