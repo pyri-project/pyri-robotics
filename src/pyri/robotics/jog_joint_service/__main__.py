@@ -60,9 +60,9 @@ class JogJointSpace_impl(object):
                     print("Currently Controlled Robot only have " + str(self.num_joints) + " joints..")
                 else:
                     joint_vel = np.zeros((self.num_joints,))
-                    joint_vel[q_i-1] = sign*self.joint_vel_limits[q_i-1]
+                    joint_vel[q_i-1] = sign*self.joint_vel_limits[q_i-1]*0.25
 
-                    self.jog_joints_with_limits2(cur_q, joint_vel,50*self.dt, False)
+                    self.jog_joints_with_limits2(cur_q, joint_vel,0.2, False)
             except:
                 # print("Specified joints might be out of range222")
                 import traceback
