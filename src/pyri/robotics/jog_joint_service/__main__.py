@@ -5,87 +5,45 @@ import RobotRaconteur as RR
 RRN=RR.RobotRaconteurNode.s
 from RobotRaconteur.Client import *     #import RR client library to connect to robot 
 import numpy as np
+import argparse
+import RobotRaconteurCompanion as RRC
+from pyri.device_manager_client import DeviceManagerClient
+import importlib.resources as resources
+from RobotRaconteurCompanion.Util.InfoFileLoader import InfoFileLoader
+from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
 
-
-from vel_emulate_sub import EmulatedVelocityControl
 import time
 
 class JogJointSpace_impl(object):
-    def __init__(self):
-        self.url_robot = None
-        self.robot_sub = None
-        self.robot = None
+    def __init__(self, robot_sub):
+        self.robot_sub = robot_sub
+
+        res, robot = self.robot_sub.TryGetDefaultClient()
+        if res:
+            self.assign_robot_details(robot)
+
+        robot_sub.ClientConnected += lambda a, b, robot: self.assign_robot_details(robot)
+        
         self.robot_rox = None #Robotics Toolbox robot object
 
         self.degree_diff = 10 # in degrees
         self.dt = 0.01 #seconds, amount of time continuosly jog joints
 
 
-    def reset(self):
-        # Stop the joints first due to safety
-        self.stop_joints()
-
-        self.url_robot = None
-        self.robot_sub = None
-        self.robot = None ## RR robot object
-        self.robot_rox = None #Robotics Toolbox robot object
-
-
-
-    def jog_joints2(self, q_i, sign):
-        print("Jog Joints2 is called")
-        if self.robot is not None:
-            if self.is_enabled_velocity_mode == False:
-                # Put the robot to POSITION mode
-                self.robot.command_mode = self.halt_mode
-                # time.sleep(0.1)
-                self.robot.command_mode = self.position_mode
-                # time.sleep(0.1)
-
-            if self.is_enabled_velocity_mode == False:
-                #enable velocity mode
-                self.vel_ctrl.enable_velocity_mode()
-                self.is_enabled_velocity_mode = True
-
-            # Jog the robot
-            if (self.num_joints < q_i):
-                print("Currently Controlled Robot only have " + str(self.num_joints) + " joints..")
-            else:
-                joint_diff = np.zeros((self.num_joints,))
-                joint_diff[q_i-1] = sign*np.deg2rad(self.degree_diff)
-
-                # qdot=(joint_diff)/self.dt
-                qdot=(joint_diff)/1.0 # Make joint speeds such that to take joint angle differences in 1 second
-
-                now=time.time()
-                while time.time()- now < self.dt:
-                    self.vel_ctrl.set_velocity_command(2*qdot)
-
-        else:
-            # Give an error message to show that the robot is not connected
-            print("Robot is not connected to JogJointSpace service yet!")
+    @property
+    def robot(self):
+        res, r = self.robot_sub.TryGetDefaultClient()
+        if not res:
+            return None
+        return r
 
     def stop_joints(self):
         print("stop_joints is called")
-        if self.robot is not None:
+        robot = self.robot
+        if robot is not None:
             if self.is_enabled_velocity_mode == False:
                 # Put the robot to POSITION mode
-                self.robot.command_mode = self.halt_mode
-                # time.sleep(0.1)
-                self.robot.command_mode = self.position_mode
-                # time.sleep(0.1)
-
-            if self.is_enabled_velocity_mode == False:
-                #enable velocity mode
-                self.vel_ctrl.enable_velocity_mode()
-                self.is_enabled_velocity_mode = True
-
-            # stop the robot
-            self.vel_ctrl.set_velocity_command(np.zeros((self.num_joints,)))
-
-            # disable velocity mode
-            self.vel_ctrl.disable_velocity_mode() 
-            self.is_enabled_velocity_mode = False
+                robot.command_mode = self.halt_mode
         else:
             # Give an error message to show that the robot is not connected
             print("Robot is not connected to JogJointSpace service yet!")
@@ -93,16 +51,9 @@ class JogJointSpace_impl(object):
 
     def jog_joints3(self, q_i, sign):
         print("Jog Joints3 is called")
-        if self.robot is not None:
+        robot = self.robot
+        if robot is not None:
             try:
-                # Put the robot to jogging mode
-                self.robot.command_mode = self.halt_mode
-                # time.sleep(0.1)
-                self.robot.command_mode = self.jog_mode
-                # time.sleep(0.1)
-
-                # Jog the robot
-                # # get the current joint angles
                 cur_q = self.get_current_joint_positions()
 
                 if (self.num_joints < q_i):
@@ -123,13 +74,9 @@ class JogJointSpace_impl(object):
 
     def jog_joints(self, q_i, sign):
         print("Jog Joints is called")
-        if self.robot is not None:
-            # Put the robot to jogging mode
-            self.robot.command_mode = self.halt_mode
-            # time.sleep(0.1)
-            self.robot.command_mode = self.jog_mode
-            # time.sleep(0.1)
-
+        robot = self.robot
+        if robot is not None:
+           
             # Jog the robot
             # # get the current joint angles
             cur_q = self.get_current_joint_positions()
@@ -152,12 +99,7 @@ class JogJointSpace_impl(object):
             print("Specified joints might be out of range")
         else:
             try:
-                # Put the robot to jogging mode
-                self.robot.command_mode = self.halt_mode
-                # time.sleep(0.1)
-                self.robot.command_mode = self.jog_mode
-                # time.sleep(0.1)
-
+                
                 # Trim joint positions according to number of joints
                 joint_position = joint_position[:self.num_joints]
                 # self.robot.jog_joint(joint_position, max_velocity, relative, wait)
@@ -172,12 +114,7 @@ class JogJointSpace_impl(object):
             print("Specified joints might be out of range")
         else:
             try:
-                # Put the robot to jogging mode
-                self.robot.command_mode = self.halt_mode
-                # time.sleep(0.1)
-                self.robot.command_mode = self.jog_mode
-                # time.sleep(0.1)
-
+                
                 # Trim joint positions according to number of joints
                 joint_velocity = joint_velocity[:self.num_joints]
                 # self.robot.jog_joint(joint_position, max_velocity, relative, wait)
@@ -189,13 +126,9 @@ class JogJointSpace_impl(object):
 
     def jog_joints_gamepad(self,joint_speed_constants):
         print("Jog Joints Gamepad is called")
-        if self.robot is not None:
-            # Put the robot to jogging mode
-            self.robot.command_mode = self.halt_mode
-            # time.sleep(0.1)
-            self.robot.command_mode = self.jog_mode
-            # time.sleep(0.1)
-            
+        robot = self.robot
+        if robot is not None:
+                        
             # get the current joint angles
             cur_q = self.get_current_joint_positions()
 
@@ -217,13 +150,9 @@ class JogJointSpace_impl(object):
 
     def jog_joints_zeros(self):
         print("Jog Joints Zeros is called")
-        if self.robot is not None:
-            # Put the robot to jogging mode
-            self.robot.command_mode = self.halt_mode
-            # time.sleep(0.1)
-            self.robot.command_mode = self.jog_mode
-            # time.sleep(0.1)
-            
+        robot = self.robot
+        if robot is not None:
+                        
             self.jog_joints_with_limits(np.zeros((self.num_joints,)), self.joint_vel_limits,True)
 
         else:
@@ -234,15 +163,9 @@ class JogJointSpace_impl(object):
         print("Jog Joints to Angles is called")
         # Similar to jog_joints_with_limits. But,
         # Moves the robot to the specified joint angles with max speed
-        if self.robot is not None:
-            # Put the robot to jogging mode
-            self.robot.command_mode = self.halt_mode
-            # time.sleep(0.1)
-            self.robot.command_mode = self.jog_mode
-            # time.sleep(0.1)
-            # print(joint_position[:self.num_joints])
-            # print(joint_position)
-
+        robot = self.robot
+        if robot is not None:
+            
             self.jog_joints_with_limits(joint_position[:self.num_joints], self.joint_vel_limits,True)
 
         else:
@@ -252,15 +175,9 @@ class JogJointSpace_impl(object):
     # For blockly
     def jog_joints_to_angles_relative(self,diff_joint_position, speed_perc):
         print("Jog Joints to Angles relatively is called")
-        if self.robot is not None:
-            # Put the robot to jogging mode
-            self.robot.command_mode = self.halt_mode
-            # time.sleep(0.1)
-            self.robot.command_mode = self.jog_mode
-            # time.sleep(0.1)
-            # print(joint_position[:self.num_joints])
-            # print(joint_position)
-
+        robot = self.robot
+        if robot is not None:
+            
             # # get the current joint angles
             cur_q = self.get_current_joint_positions()
             diff_joint_position = diff_joint_position[:self.num_joints]
@@ -273,13 +190,9 @@ class JogJointSpace_impl(object):
 
     def jog_joint_to_angle(self, joint, position, speed_perc):
         print("Jog Joint to Angle is called")
-        if self.robot is not None:
-            # Put the robot to jogging mode
-            self.robot.command_mode = self.halt_mode
-            # time.sleep(0.1)
-            self.robot.command_mode = self.jog_mode
-            # time.sleep(0.1)
-
+        robot = self.robot
+        if robot is not None:
+            
             # # get the current joint angles
             cur_q = self.get_current_joint_positions()
             cur_q[joint] = position
@@ -295,12 +208,7 @@ class JogJointSpace_impl(object):
         # Similar to jog_joints_with_limits. But,
         # Moves the robot to the specified joint angles with max speed percentage
         if self.robot is not None:
-            # Put the robot to jogging mode
-            self.robot.command_mode = self.halt_mode
-            # time.sleep(0.1)
-            self.robot.command_mode = self.jog_mode
-            # time.sleep(0.1)
-
+            
             self.jog_joints_with_limits(joint_position[:self.num_joints], float(speed_perc)*0.01*self.joint_vel_limits,True)
 
         else:
@@ -308,50 +216,17 @@ class JogJointSpace_impl(object):
             print("Robot is not connected to JogJointSpace service yet!")
 
 
-    def connect2robot(self, url_robot):
-        if self.robot is None:
-            self.url_robot = url_robot
+    def assign_robot_details(self, robot):
+        
+        if robot is not None:
 
-            # self.robot = RRN.ConnectService(self.url_robot) # connect to robot with the given url
-            self.robot_sub = RRN.SubscribeService(self.url_robot)
-            self.robot = self.robot_sub.GetDefaultClientWait(1)            
-            
-            # self.robot.reset_errors()
-            # self.robot.enable()
-
-            # Define Robot modes
-            self.robot_const = RRN.GetConstants("com.robotraconteur.robotics.robot", self.robot)
+            self.robot_const = RRN.GetConstants("com.robotraconteur.robotics.robot", robot)
             self.halt_mode = self.robot_const["RobotCommandMode"]["halt"]
             self.jog_mode = self.robot_const["RobotCommandMode"]["jog"]
             
             self.position_mode = self.robot_const["RobotCommandMode"]["position_command"]
-            # self.trajectory_mode = self.robot_const["RobotCommandMode"]["trajectory"]
 
-            self.assign_robot_details()
-
-            # ---------------------------
-            # self.robot_sub=RRN.SubscribeService(self.url_robot)
-            # self.state_w = self.robot_sub.SubscribeWire("robot_state")
-            self.is_enabled_velocity_mode = False
-            # self.cmd_w = self.robot_sub.SubscribeWire("position_command")
-            # self.vel_ctrl = EmulatedVelocityControl(self.robot,self.state_w, self.cmd_w, self.dt)
-
-            self.vel_ctrl = EmulatedVelocityControl(self.robot, self.dt)
-            # ---------------------------
-            
-            # log that the robot is successfully connected  
-            print("Robot is connected to JogJointSpace service!")
-        else:
-            # Give an error that says the robot is already connected
-            print("Robot is already connected to JogJointSpace service! Trying to connect again..")
-            self.reset()
-            self.connect2robot(url_robot)
-
-
-
-    def assign_robot_details(self):
-        if self.robot is not None:
-            self.robot_info = self.robot.robot_info
+            self.robot_info = robot.robot_info
             self.joint_info = self.robot_info.joint_info # A list of jointInfo
 
             self.joint_types = [] # A list or array of N numbers containing the joint type. 1 for rotary, 3 for prismatic
@@ -387,24 +262,75 @@ class JogJointSpace_impl(object):
         cur_q = cur_robot_state[0].joint_position
         return cur_q # in radian ndarray
 
+    def setf_halt_mode(self):
+        self.robot.command_mode = self.halt_mode
+
+    def setf_jog_mode(self):
+        self.robot.command_mode = self.halt_mode
+        time.sleep(0.1)
+        self.robot.command_mode = self.jog_mode
+
+class JogJointSpaceService_impl:
+    def __init__(self, device_manager_url, device_info = None, node : RR.RobotRaconteurNode = None):
+        if node is None:
+            self._node = RR.RobotRaconteurNode.s
+        else:
+            self._node = node
+        self.device_info = device_info
+
+        self._device_manager = DeviceManagerClient(device_manager_url)
+        self._device_manager.refresh_devices(1)
+
+    def get_jog(self, robot_name):
+        print(f"robot_name type: {type(robot_name)}")
+        #TODO: Fix type of robot_name
+        return JogJointSpace_impl(self._device_manager.get_device_subscription(robot_name.decode("utf-8"))), "tech.pyri.robotics.pluginJogJointSpace.JogJointSpace"
 
 def main():
+
+    parser = argparse.ArgumentParser(description="PyRI Jog Joint Service")    
+    parser.add_argument("--device-info-file", type=argparse.FileType('r'),default=None,required=True,help="Device info file for devices states service (required)")
+    parser.add_argument('--device-manager-url', type=str, default=None,required=True,help="Robot Raconteur URL for device manager service (required)")
+    parser.add_argument("--wait-signal",action='store_const',const=True,default=False, help="wait for SIGTERM or SIGINT (Linux only)")
+    
+    args, _ = parser.parse_known_args()
+
+    RRC.RegisterStdRobDefServiceTypes(RRN)
+    RRN.RegisterServiceType(resources.read_text(__package__,'tech.pyri.robotics.JogJointSpace.robdef'))
+
+    with args.device_info_file:
+        device_info_text = args.device_info_file.read()
+
+    info_loader = InfoFileLoader(RRN)
+    device_info, device_ident_fd = info_loader.LoadInfoFileFromString(device_info_text, "com.robotraconteur.device.DeviceInfo", "device")
+
+    attributes_util = AttributesUtil(RRN)
+    device_attributes = attributes_util.GetDefaultServiceAttributesFromDeviceInfo(device_info)
+
+
     # RR.ServerNodeSetup("NodeName", TCP listen port, optional set of flags as parameters)
-    with RR.ServerNodeSetup("experimental.plugin-jogJointSpace-service", 8890) as node_setup:
+    with RR.ServerNodeSetup("experimental.plugin-jogJointSpace-service", 55906) as node_setup:
 
         # register service type
-        RRN.RegisterServiceTypeFromFile("./experimental.pluginJogJointSpace")
+        
 
         # create object
-        JogJointSpace_inst = JogJointSpace_impl()
+        JogJointSpaceService_inst = JogJointSpaceService_impl(args.device_manager_url, device_info=device_info, node = RRN)
         # register service with service name "JogJointSpace", type "experimental.pluginJogJointSpace.JogJointSpace", actual object: JogJointSpace_inst
-        RRN.RegisterService("JogJointSpace","experimental.pluginJogJointSpace.JogJointSpace",JogJointSpace_inst)
+        RRN.RegisterService("JogJointSpace","tech.pyri.robotics.pluginJogJointSpace.JogJointSpaceService",JogJointSpaceService_inst)
 
-        #Wait for the user to shutdown the service
-        if (sys.version_info > (3, 0)):
-            input("pluginJogJointSpace Server started, press enter to quit...")
+        if args.wait_signal:  
+            #Wait for shutdown signal if running in service mode          
+            print("Press Ctrl-C to quit...")
+            import signal
+            signal.sigwait([signal.SIGTERM,signal.SIGINT])
         else:
-            raw_input("pluginJogJointSpace Server started, press enter to quit...")
+            #Wait for the user to shutdown the service
+            if (sys.version_info > (3, 0)):
+                input("Server started, press enter to quit...")
+            else:
+                raw_input("Server started, press enter to quit...")
+
 
 if __name__ == '__main__':
     main()
