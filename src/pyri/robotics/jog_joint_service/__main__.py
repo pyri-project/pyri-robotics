@@ -279,7 +279,7 @@ class JogJointSpaceService_impl:
         self.device_info = device_info
 
         self._device_manager = DeviceManagerClient(device_manager_url)
-        self._device_manager.refresh_devices(1)
+        self._device_manager.refresh_devices(5)
 
     def get_jog(self, robot_name):
         print(f"robot_name type: {type(robot_name)}")
@@ -296,7 +296,7 @@ def main():
     args, _ = parser.parse_known_args()
 
     RRC.RegisterStdRobDefServiceTypes(RRN)
-    RRN.RegisterServiceType(resources.read_text(__package__,'tech.pyri.robotics.JogJointSpace.robdef'))
+    RRN.RegisterServiceType(resources.read_text(__package__,'tech.pyri.robotics.pluginJogJointSpace.robdef'))
 
     with args.device_info_file:
         device_info_text = args.device_info_file.read()
@@ -317,7 +317,8 @@ def main():
         # create object
         JogJointSpaceService_inst = JogJointSpaceService_impl(args.device_manager_url, device_info=device_info, node = RRN)
         # register service with service name "JogJointSpace", type "experimental.pluginJogJointSpace.JogJointSpace", actual object: JogJointSpace_inst
-        RRN.RegisterService("JogJointSpace","tech.pyri.robotics.pluginJogJointSpace.JogJointSpaceService",JogJointSpaceService_inst)
+        ctx = RRN.RegisterService("JogJointSpace","tech.pyri.robotics.pluginJogJointSpace.JogJointSpaceService",JogJointSpaceService_inst)
+        ctx.SetServiceAttributes(device_attributes)
 
         if args.wait_signal:  
             #Wait for shutdown signal if running in service mode          

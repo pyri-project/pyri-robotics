@@ -1,0 +1,19 @@
+device:
+  name: pyri_jog_cartesian_service
+manufacturer:
+  name: PyRI_Project
+  uuid: 244389f3-35d5-4f9f-a244-c89649ce2a18
+model:
+  name: pyri_jog_cartesian
+  uuid: a0382bf0-1604-48f7-878a-8f8cb43ae6f6
+user_description: Cartesian jog controller service
+serial_number: 1
+device_classes:
+  - class_identifier:
+      name: joint_cartesian
+      uuid: 659931ce-d496-44c8-ad8c-e9ece9666547
+    subclasses:
+      - cartesian_jog
+implemented_types:
+  - com.robotraconteur.device.Device
+  - tech.pyri.robotics.pluginJogCartesianSpace

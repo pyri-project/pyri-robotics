@@ -1,10 +1,14 @@
 #Service to provide interface to RR-webBrowser-plugin-jogCartesianSpace
-service experimental.pluginJogCartesianSpace
+service tech.pyri.robotics.pluginJogCartesianSpace
 
-stdver 0.14.3
+stdver 0.10.0
+
+import com.robotraconteur.device
+
+using com.robotraconteur.device.Device
+using com.robotraconteur.device.DeviceInfo
 
 object JogCartesianSpace
-    function void connect2robot(string url_robot)
     function void jog_cartesian(double[] P_axis, double[] R_axis)
     function void prepare_jog()
     function void jog_cartesian2(double[] P_axis, double[] R_axis)
@@ -14,3 +18,11 @@ object JogCartesianSpace
     function void jog_cartesian_with_speed(double[] P_axis, double[] R_axis_angles, double speed_perc)
     function void jog_cartesian_relative_with_speed(double[] P_axis, double[] R_axis_angles, double speed_perc)
 end 
+
+object JogCartesianSpaceService
+    implements Device
+
+    property DeviceInfo device_info [readonly,nolock]
+
+    objref JogCartesianSpace{string} jog
+end

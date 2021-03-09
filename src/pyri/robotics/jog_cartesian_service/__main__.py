@@ -1,21 +1,36 @@
+# @burakaksoy plugin-jogCartesianSpace-service.py
+
 import sys
 import RobotRaconteur as RR
 RRN=RR.RobotRaconteurNode.s
 from RobotRaconteur.Client import *     #import RR client library to connect to robot 
 import numpy as np
 
-import general_robotics_toolbox as rox
+from . import general_robotics_toolbox as rox
 from qpsolvers import solve_qp
 
-from vel_emulate_sub import EmulatedVelocityControl
+import argparse
+import RobotRaconteurCompanion as RRC
+from pyri.device_manager_client import DeviceManagerClient
+import importlib.resources as resources
+from RobotRaconteurCompanion.Util.InfoFileLoader import InfoFileLoader
+from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
+
 import time
 
 class JogCartesianSpace_impl(object):
-    def __init__(self):
-        self.url_robot = None
-        self.robot_sub = None
-        self.robot = None ## RR robot object
+    def __init__(self, robot_sub):
+       
+        self.robot_sub = robot_sub
         self.robot_rox = None #Robotics Toolbox robot object
+
+        res, robot = self.robot_sub.TryGetDefaultClientWait(5)
+        if res:
+            self.assign_robot_details(robot)
+
+        robot_sub.ClientConnected += lambda a, b, robot: self.assign_robot_details(robot)
+
+        
 
         # Incremental difference amounts to jog in cartesian space
         self.move_distance = 0.05 # meters
@@ -26,17 +41,12 @@ class JogCartesianSpace_impl(object):
 
         self.dt = 0.02 #seconds, amount of time continuosly jog joints
 
-
-    def reset(self):
-        # Stop the joints first due to safety
-        self.stop_joints()
-
-        self.url_robot = None
-        self.robot = None ## RR robot object
-        self.robot_rox = None #Robotics Toolbox robot object
-
-        self.pose_at_command = None 
-        self.num_jog_command = 0
+    @property
+    def robot(self):
+        res, r = self.robot_sub.TryGetDefaultClient()
+        if not res:
+            return None
+        return r
 
     def jog_cartesian2(self, P_axis, R_axis):
         print("Jog Joints2 is called")
@@ -52,18 +62,7 @@ class JogCartesianSpace_impl(object):
         if self.robot is not None:
             print("Jog in Cartesian Space with command P_axis" + str(P_axis) + "and R_axis"+ str(R_axis)) 
 
-            if self.is_enabled_velocity_mode == False:
-                ## Put the robot to POSITION mode
-                self.robot.command_mode = self.halt_mode
-                # time.sleep(0.1)
-                self.robot.command_mode = self.position_mode
-                # time.sleep(0.1)
-
-            if self.is_enabled_velocity_mode == False:
-                #enable velocity mode
-                self.vel_ctrl.enable_velocity_mode()
-                self.is_enabled_velocity_mode = True
-
+            
             ## Jog the robot in cartesian space
             # Update the end effector pose info
             # pose = self.get_current_pose()
@@ -118,12 +117,7 @@ class JogCartesianSpace_impl(object):
         if self.robot is not None:
             print("Jog in Cartesian Space with command P_axis" + str(P_axis) + "and R_axis_angles"+ str(R_axis_angles)) 
 
-            ## Put the robot to jogging mode
-            self.robot.command_mode = self.halt_mode
-            # time.sleep(0.1)
-            self.robot.command_mode = self.jog_mode
-            # time.sleep(0.1)
-
+           
             ## Jog the robot in cartesian space
             # Update the end effector pose info
             # pose = self.get_current_pose()
@@ -189,12 +183,7 @@ class JogCartesianSpace_impl(object):
         if self.robot is not None:
             print("Jog in Cartesian Space with command P_axis" + str(P_axis) + "and R_axis_angles"+ str(R_axis_angles)) 
 
-            ## Put the robot to jogging mode
-            self.robot.command_mode = self.halt_mode
-            # time.sleep(0.1)
-            self.robot.command_mode = self.jog_mode
-            # time.sleep(0.1)
-
+           
             ## Jog the robot in cartesian space
             # Update the end effector pose info
             # pose = self.get_current_pose()
@@ -245,25 +234,11 @@ class JogCartesianSpace_impl(object):
 
     def stop_joints(self):
         print("stop_joints is called")
-        if self.robot is not None:
-            if self.is_enabled_velocity_mode == False:
-                # Put the robot to POSITION mode
-                self.robot.command_mode = self.halt_mode
-                # time.sleep(0.1)
-                self.robot.command_mode = self.position_mode
-                # time.sleep(0.1)
-
-            if self.is_enabled_velocity_mode == False:
-                #enable velocity mode
-                self.vel_ctrl.enable_velocity_mode()
-                self.is_enabled_velocity_mode = True
-
-            # stop the robot
-            self.vel_ctrl.set_velocity_command(np.zeros((self.num_joints,)))
-
-            # disable velocity mode
-            self.vel_ctrl.disable_velocity_mode() 
-            self.is_enabled_velocity_mode = False
+        if self.robot is not None:           
+            
+            self.robot.command_mode = self.halt_mode
+               
+            
         else:
             # Give an error message to show that the robot is not connected
             print("Robot is not connected to JogCartesianSpace service yet!")        
@@ -282,12 +257,7 @@ class JogCartesianSpace_impl(object):
         if self.robot is not None:
             print("Jog in Cartesian Space with command P_axis" + str(P_axis) + "and R_axis"+ str(R_axis)) 
 
-            ## Put the robot to jogging mode
-            self.robot.command_mode = self.halt_mode
-            # time.sleep(0.1)
-            self.robot.command_mode = self.jog_mode
-            # time.sleep(0.1)
-
+           
             ## Jog the robot in cartesian space
             # Update the end effector pose info
             # pose = self.get_current_pose()
@@ -333,81 +303,55 @@ class JogCartesianSpace_impl(object):
             # Give an error message to show that the robot is not connected
             print("Robot is not connected to JogCartesianSpace service yet!")
 
-    def connect2robot(self, url_robot):
-        if self.robot is None:
-            self.url_robot = url_robot
+    
+    def assign_robot_details(self,robot):
+        print(f"assign_robot_details: {robot}")
+        try:
+            if robot is not None:
 
-            # self.robot = RRN.ConnectService(self.url_robot) # connect to robot with the given url
-            self.robot_sub = RRN.SubscribeService(self.url_robot)
-            self.robot = self.robot_sub.GetDefaultClientWait(1) 
-            
-            # self.robot.reset_errors()
-            # self.robot.enable()
-
-            # Define Robot modes
-            self.robot_const = RRN.GetConstants("com.robotraconteur.robotics.robot", self.robot)
-            self.halt_mode = self.robot_const["RobotCommandMode"]["halt"]
-            self.jog_mode = self.robot_const["RobotCommandMode"]["jog"]
-            
-            self.position_mode = self.robot_const["RobotCommandMode"]["position_command"]
-            # self.trajectory_mode = self.robot_const["RobotCommandMode"]["trajectory"]
-
-            self.assign_robot_details()
-
-            # ---------------------------
-            # self.robot_sub=RRN.SubscribeService(self.url_robot)
-            # self.state_w = self.robot_sub.SubscribeWire("robot_state")
-            self.is_enabled_velocity_mode = False
-            # self.cmd_w = self.robot_sub.SubscribeWire("position_command")
-            # self.vel_ctrl = EmulatedVelocityControl(self.robot,self.state_w, self.cmd_w, self.dt)
-
-            self.vel_ctrl = EmulatedVelocityControl(self.robot, self.dt)
-            # ---------------------------
-            
-            # log that the robot is successfully connected  
-            print("Robot is connected to JogCartesianSpace service!")
-        else:
-            # Give an error that says the robot is already connected
-            print("Robot is already connected to JogCartesianSpace service! Trying to connect again..")
-            self.reset()
-            self.connect2robot(url_robot)
-
-    def assign_robot_details(self):
-        if self.robot is not None:
-            self.robot_info = self.robot.robot_info
-            self.joint_info = self.robot_info.joint_info # A list of jointInfo
-
-            self.joint_types = [] # A list or array of N numbers containing the joint type. 1 for rotary, 3 for prismatic
-            self.joint_lower_limits = [] # list or numpy.array
-            self.joint_upper_limits = [] # list or numpy.array
-            self.joint_vel_limits = [] # list or numpy.array
-            self.joint_acc_limits = [] # list or numpy.array
-            self.joint_names = [] # list of string
-            self.joint_uuids = [] 
-            for joint in self.joint_info:
-                self.joint_types.append(joint.joint_type)
-                self.joint_lower_limits.append(joint.joint_limits.lower)
-                self.joint_upper_limits.append(joint.joint_limits.upper)
-                self.joint_vel_limits.append(joint.joint_limits.velocity)
-                self.joint_acc_limits.append(joint.joint_limits.acceleration)
-                self.joint_names.append(joint.joint_identifier.name)
-                self.joint_uuids.append(joint.joint_identifier.uuid)
+                self.robot_const = RRN.GetConstants("com.robotraconteur.robotics.robot", robot)
+                self.halt_mode = self.robot_const["RobotCommandMode"]["halt"]
+                self.jog_mode = self.robot_const["RobotCommandMode"]["jog"]
                 
-            # convert them to numpy arrays
-            self.joint_types = np.asarray(self.joint_types)
-            self.joint_lower_limits = np.asarray(self.joint_lower_limits)
-            self.joint_upper_limits = np.asarray(self.joint_upper_limits)
-            self.joint_vel_limits = np.asarray(self.joint_vel_limits)
-            self.joint_acc_limits = np.asarray(self.joint_acc_limits)                
+                self.position_mode = self.robot_const["RobotCommandMode"]["position_command"]
 
-            self.num_joints = len(self.joint_info)
+                self.robot_info = robot.robot_info
+                self.joint_info = self.robot_info.joint_info # A list of jointInfo
 
-            # Create roboics toolbox robot object as well
-            self.create_robot_rox()
+                self.joint_types = [] # A list or array of N numbers containing the joint type. 1 for rotary, 3 for prismatic
+                self.joint_lower_limits = [] # list or numpy.array
+                self.joint_upper_limits = [] # list or numpy.array
+                self.joint_vel_limits = [] # list or numpy.array
+                self.joint_acc_limits = [] # list or numpy.array
+                self.joint_names = [] # list of string
+                self.joint_uuids = [] 
+                for joint in self.joint_info:
+                    self.joint_types.append(joint.joint_type)
+                    self.joint_lower_limits.append(joint.joint_limits.lower)
+                    self.joint_upper_limits.append(joint.joint_limits.upper)
+                    self.joint_vel_limits.append(joint.joint_limits.velocity)
+                    self.joint_acc_limits.append(joint.joint_limits.acceleration)
+                    self.joint_names.append(joint.joint_identifier.name)
+                    self.joint_uuids.append(joint.joint_identifier.uuid)
+                    
+                # convert them to numpy arrays
+                self.joint_types = np.asarray(self.joint_types)
+                self.joint_lower_limits = np.asarray(self.joint_lower_limits)
+                self.joint_upper_limits = np.asarray(self.joint_upper_limits)
+                self.joint_vel_limits = np.asarray(self.joint_vel_limits)
+                self.joint_acc_limits = np.asarray(self.joint_acc_limits)                
 
-        else:
-            # Give an error message to show that the robot is not connected
-            print("Assign robot details failed. Robot is not connected to JogCartesianSpace service yet!")
+                self.num_joints = len(self.joint_info)
+
+                # Create roboics toolbox robot object as well
+                self.create_robot_rox()
+
+            else:
+                # Give an error message to show that the robot is not connected
+                print("Assign robot details failed. Robot is not connected to JogCartesianSpace service yet!")
+        except:
+            import traceback
+            traceback.print_exc()
 
     def create_robot_rox(self):
         chains = self.robot_info.chains # Get RobotKinChainInfo
@@ -431,6 +375,7 @@ class JogCartesianSpace_impl(object):
         # create the robot from toolbox
         # robot = rox.Robot(H,P,joint_types-1,joint_lower_limits,joint_upper_limits,joint_vel_limits,joint_acc_limits)
         self.robot_rox = rox.Robot(self.H_shaped,self.P_shaped,self.joint_types-1)
+        print(f"Assigned self.robot_rox: {self.robot_rox}")
 
     def get_current_joint_positions(self):
         cur_robot_state = self.robot.robot_state.PeekInValue()    
@@ -700,23 +645,63 @@ class JogCartesianSpace_impl(object):
             print("Robot is not connected to JogCartesianSpace service yet!")
 
 
-def main():
-    # RR.ServerNodeSetup("NodeName", TCP listen port, optional set of flags as parameters)
-    with RR.ServerNodeSetup("experimental.plugin-jogCartesianSpace-service", 8891) as node_setup:
+class JogCartesianSpaceService_impl:
+    def __init__(self, device_manager_url, device_info = None, node : RR.RobotRaconteurNode = None):
+        if node is None:
+            self._node = RR.RobotRaconteurNode.s
+        else:
+            self._node = node
+        self.device_info = device_info
 
-        # register service type
-        RRN.RegisterServiceTypeFromFile("./experimental.pluginJogCartesianSpace")
+        self._device_manager = DeviceManagerClient(device_manager_url)
+        self._device_manager.refresh_devices(5)
+
+    def get_jog(self, robot_name):
+        print(f"robot_name type: {type(robot_name)}")
+        #TODO: Fix type of robot_name
+        return JogCartesianSpace_impl(self._device_manager.get_device_subscription(robot_name.decode("utf-8"))), "tech.pyri.robotics.pluginJogCartesianSpace.JogCartesianSpace"
+
+def main():
+
+    parser = argparse.ArgumentParser(description="PyRI Jog Cartesian Service")    
+    parser.add_argument("--device-info-file", type=argparse.FileType('r'),default=None,required=True,help="Device info file for devices states service (required)")
+    parser.add_argument('--device-manager-url', type=str, default=None,required=True,help="Robot Raconteur URL for device manager service (required)")
+    parser.add_argument("--wait-signal",action='store_const',const=True,default=False, help="wait for SIGTERM or SIGINT (Linux only)")
+    
+    args, _ = parser.parse_known_args()
+
+    RRC.RegisterStdRobDefServiceTypes(RRN)
+    RRN.RegisterServiceType(resources.read_text(__package__,'tech.pyri.robotics.pluginJogCartesianSpace.robdef'))
+
+    with args.device_info_file:
+        device_info_text = args.device_info_file.read()
+
+    info_loader = InfoFileLoader(RRN)
+    device_info, device_ident_fd = info_loader.LoadInfoFileFromString(device_info_text, "com.robotraconteur.device.DeviceInfo", "device")
+
+    attributes_util = AttributesUtil(RRN)
+    device_attributes = attributes_util.GetDefaultServiceAttributesFromDeviceInfo(device_info)
+    # RR.ServerNodeSetup("NodeName", TCP listen port, optional set of flags as parameters)
+    with RR.ServerNodeSetup("experimental.plugin-jogCartesianSpace-service", 55907) as node_setup:
 
         # create object
-        JogCartesianSpace_inst = JogCartesianSpace_impl()
+        JogCartesianSpaceService_inst = JogCartesianSpaceService_impl(args.device_manager_url, device_info=device_info, node = RRN)
         # register service with service name "Vision", type "experimental.pluginVision.Vision", actual object: Vision_inst
-        RRN.RegisterService("JogCartesianSpace","experimental.pluginJogCartesianSpace.JogCartesianSpace",JogCartesianSpace_inst)
+        ctx = RRN.RegisterService("JogCartesianSpace","tech.pyri.robotics.pluginJogCartesianSpace.JogCartesianSpaceService",JogCartesianSpaceService_inst)
+        ctx.SetServiceAttributes(device_attributes)
 
         #Wait for the user to shutdown the service
-        if (sys.version_info > (3, 0)):
-            input("pluginJogCartesianSpace Server started, press enter to quit...")
+        if args.wait_signal:  
+            #Wait for shutdown signal if running in service mode          
+            print("Press Ctrl-C to quit...")
+            import signal
+            signal.sigwait([signal.SIGTERM,signal.SIGINT])
         else:
-            raw_input("pluginJogCartesianSpace Server started, press enter to quit...")
+            #Wait for the user to shutdown the service
+            if (sys.version_info > (3, 0)):
+                input("Server started, press enter to quit...")
+            else:
+                raw_input("Server started, press enter to quit...")
 
 if __name__ == '__main__':
     main()
