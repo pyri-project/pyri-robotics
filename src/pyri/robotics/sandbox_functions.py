@@ -1,15 +1,18 @@
 from pyri.plugins.sandbox_functions import PyriSandboxFunctionsPluginFactory
 from pyri.sandbox_context import PyriSandboxContext
 import numpy as np
+import time
 
-def robot_jog_freespace(robot_name, joint_position):
-    print(f"Jogging robot \"{robot_name}\" to: {joint_position}")
+def jog_joint(dropdown_joint_selected ,value_degree, speed_perc):
 
     device_manager = PyriSandboxContext.device_manager
-    robot_client = device_manager.get_device_client(robot_name, 1)
-    j = np.array(joint_position, dtype=np.float64)
-    v = np.ones((len(j)))
-    robot_client.jog_freespace(j,v,True)
+    jog_service = device_manager.get_device_client("joint_jog", 1)
+    jog = jog_service.get_jog("robot")
+    jog.jog_joint_to_angle(dropdown_joint_selected-1, np.deg2rad(float(value_degree)), float(speed_perc))
+
+def time_sleep(seconds):
+
+    time.sleep(seconds)
 
 
 class RoboticsSandboxFunctionsPluginFactory(PyriSandboxFunctionsPluginFactory):
@@ -17,10 +20,10 @@ class RoboticsSandboxFunctionsPluginFactory(PyriSandboxFunctionsPluginFactory):
         return "pyri-robotics"
 
     def get_sandbox_function_names(self):
-        return ["robot_jog_freespace"]
+        return ["jog_joint", "time_sleep"]
 
     def get_sandbox_functions(self):
-        return {"robot_jog_freespace": robot_jog_freespace}
+        return {"jog_joint": jog_joint, "time_sleep": time_sleep}
 
 
 def get_sandbox_functions_factory():
