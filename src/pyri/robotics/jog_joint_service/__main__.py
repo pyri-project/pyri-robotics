@@ -270,6 +270,19 @@ class JogJointSpace_impl(object):
         time.sleep(0.1)
         self.robot.command_mode = self.jog_mode
 
+class JogTool_impl:
+    def __init__(self, tool_sub):
+        self.tool_sub = tool_sub
+
+    def open(self):
+        self.tool_sub.GetDefaultClient().open()
+
+    def close(self):
+        self.tool_sub.GetDefaultClient().close()
+
+    def setf_position(self,command):
+        self.tool_sub.GetDefaultClient().setf_command(command)
+
 class JogJointSpaceService_impl:
     def __init__(self, device_manager_url, device_info = None, node : RR.RobotRaconteurNode = None):
         if node is None:
@@ -285,6 +298,13 @@ class JogJointSpaceService_impl:
         print(f"robot_name type: {type(robot_name)}")
         #TODO: Fix type of robot_name
         return JogJointSpace_impl(self._device_manager.get_device_subscription(robot_name.decode("utf-8"))), "tech.pyri.robotics.pluginJogJointSpace.JogJointSpace"
+
+    def get_tool(self, tool_name):
+        #TODO: Fix type of robot_name
+        
+        return JogTool_impl(self._device_manager.get_device_subscription(tool_name.decode("utf-8"))), "tech.pyri.robotics.pluginJogJointSpace.JogTool"
+
+
 
 def main():
 

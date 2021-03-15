@@ -26,10 +26,17 @@ object JogJointSpace
     function void jog_joints_to_angles2(double[] joint_position, double speed_perc)
 end
 
+object JogTool
+    function void open()
+    function void close()
+    function void setf_command(double command)
+end
+
 object JogJointSpaceService
     implements Device
 
     property DeviceInfo device_info [readonly,nolock]
 
     objref JogJointSpace{string} jog
+    objref JogTool{string} tool
 end
