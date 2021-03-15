@@ -4,12 +4,12 @@ from typing import List, Dict, NamedTuple, TYPE_CHECKING
 def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
     blocks = {}
 
-    blocks["robot_jog_joint_not_relative"] = PyriBlocklyBlock(
-        name = "robot_jog_joint_not_relative",
+    blocks["robot_jog_joint_absolute"] = PyriBlocklyBlock(
+        name = "robot_jog_joint_absolute",
         category = "Robotics",
         doc = "Jog joints",
         json = """{
-                "type": "robot_jog_joint_not_relative",
+                "type": "robot_jog_joint_absolute",
                 "message0": "Jog Joint %1 to degree %2 %3 with %4 %% speed",
                 "args0": [
                     {
@@ -70,7 +70,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                 "tooltip": "",
                 "helpUrl": ""
                 }""",
-        python_generator = """Blockly.Python['robot_jog_joint_not_relative'] = function(block) {
+        python_generator = """Blockly.Python['robot_jog_joint_absolute'] = function(block) {
                             var dropdown_joint_selected = block.getFieldValue('JOINT_SELECTED');
                             var value_degree = Blockly.Python.valueToCode(block, 'DEGREE', Blockly.Python.ORDER_ATOMIC);
                             var number_speed = block.getFieldValue('SPEED');
@@ -156,12 +156,12 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             };"""
     )
 
-    blocks["robot_jog_joints_not_relative"] = PyriBlocklyBlock(
-        name = "robot_jog_joints_not_relative",
+    blocks["robot_jog_joints_absolute"] = PyriBlocklyBlock(
+        name = "robot_jog_joints_absolute",
         category = "Robotics",
         doc = "Jog joints",
         json = """{
-                "type": "robot_jog_joints_not_relative",
+                "type": "robot_jog_joints_absolute",
                 "lastDummyAlign0": "RIGHT",
                 "message0": "Jog Joints to %1 1 %2 2 %3 3 %4 4 %5 5 %6 6 %7 7 %8 degrees with  %9 %% speed",
                 "args0": [
@@ -227,7 +227,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                 "tooltip": "",
                 "helpUrl": ""
                 }""",
-        python_generator = """Blockly.Python['robot_jog_joints_not_relative'] = function(block) {
+        python_generator = """Blockly.Python['robot_jog_joints_absolute'] = function(block) {
                             var deg_1 = Blockly.Python.valueToCode(block, 'DEGREE_1', Blockly.Python.ORDER_ATOMIC);
                             var deg_2 = Blockly.Python.valueToCode(block, 'DEGREE_2', Blockly.Python.ORDER_ATOMIC);
                             var deg_3 = Blockly.Python.valueToCode(block, 'DEGREE_3', Blockly.Python.ORDER_ATOMIC);
@@ -327,12 +327,12 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             };"""
     )
 
-    blocks["robot_jog_cartesian_not_relative"] = PyriBlocklyBlock(
-        name = "robot_jog_cartesian_not_relative",
+    blocks["robot_jog_cartesian_absolute"] = PyriBlocklyBlock(
+        name = "robot_jog_cartesian_absolute",
         category = "Robotics",
         doc = "Jog joints",
         json = """{
-                "type": "robot_jog_cartesian_not_relative",
+                "type": "robot_jog_cartesian_absolute",
                 "lastDummyAlign0": "RIGHT",
                 "message0": "Jog Cartesian to: %1 Position %2 Orientation %3 with  %4 %% speed",
                 "args0": [
@@ -368,7 +368,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                 "tooltip": "",
                 "helpUrl": ""
                 }""",
-        python_generator = """Blockly.Python['robot_jog_cartesian_not_relative'] = function(block) {
+        python_generator = """Blockly.Python['robot_jog_cartesian_absolute'] = function(block) {
                             var value_position = Blockly.Python.valueToCode(block, 'POSITION', Blockly.Python.ORDER_ATOMIC);
                             var value_orientation = Blockly.Python.valueToCode(block, 'ORIENTATION', Blockly.Python.ORDER_ATOMIC);
                             var number_speed = block.getFieldValue('SPEED');
@@ -430,37 +430,6 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             };
                             """
     )
-
-    blocks["robot_wait"] = PyriBlocklyBlock(
-        name = "robot_wait",
-        category = "Robotics",
-        doc = "Jog joints",
-        json = """{
-                "type": "robot_wait",
-                "message0": "Wait %1 seconds",
-                "args0": [
-                    {
-                    "type": "field_number",
-                    "name": "WAIT_TIME",
-                    "value": 1,
-                    "min": 0
-                    }
-                ],
-                "previousStatement": null,
-                "nextStatement": null,
-                "colour": 120,
-                "tooltip": "",
-                "helpUrl": ""
-                }""",
-        python_generator = """Blockly.Python['robot_wait'] = function(block) {
-                            var number_wait_time = block.getFieldValue('WAIT_TIME');
-                            
-                            var code = 'time_sleep(' + number_wait_time+ ')\\n';
-                            return code;
-                            };
-                            """
-        
-    )
     blocks["robot_tool_gripper"] = PyriBlocklyBlock(
         name = "robot_tool_gripper",
         category = "Robotics",
@@ -499,9 +468,6 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             """
         
     )
-
-
-
     return blocks
 
 def _get_categories() -> Dict[str,PyriBlocklyCategory]:

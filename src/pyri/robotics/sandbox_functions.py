@@ -24,6 +24,9 @@ def robot_tool_gripper(dropdown_status):
     else:
         tool.close()
 
+def math_vector(string_vector):
+    return np.fromstring(string_vector,sep=",")
+
 def _get_sandbox_functions():
     return {
         "robot_jog_joint": robot_jog_joint,
