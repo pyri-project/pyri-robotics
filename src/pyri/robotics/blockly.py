@@ -75,7 +75,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             var value_degree = Blockly.Python.valueToCode(block, 'DEGREE', Blockly.Python.ORDER_ATOMIC);
                             var number_speed = block.getFieldValue('SPEED');
                             
-                            var code = 'jog_joint(' + dropdown_joint_selected + ', ' + value_degree + ', ' + number_speed + ')\\n';
+                            var code = 'robot_jog_joint(' + dropdown_joint_selected + ', ' + value_degree + ', ' + number_speed + ')\\n';
                             return code;
                             };"""
     )
@@ -151,7 +151,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             var value_degree = Blockly.Python.valueToCode(block, 'DEGREE', Blockly.Python.ORDER_ATOMIC);
                             var number_speed = block.getFieldValue('SPEED');
                             
-                            var code = 'jog_joint_relative(' + dropdown_joint_selected + ', ' + value_degree + ', ' + number_speed + ')\\n';
+                            var code = 'robot_jog_joint_relative(' + dropdown_joint_selected + ', ' + value_degree + ', ' + number_speed + ')\\n';
                             return code;
                             };"""
     )
@@ -237,7 +237,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             var deg_7 = Blockly.Python.valueToCode(block, 'DEGREE_7', Blockly.Python.ORDER_ATOMIC);
                             var number_speed = block.getFieldValue('SPEED');
                         
-                            var code = 'jog_joints([' +deg_1+', ' +deg_2+', '+deg_3+', '+deg_4+', '+deg_5+', '+deg_6+', '+deg_7+'], ' + number_speed + ')\\n';
+                            var code = 'robot_jog_joints([' +deg_1+', ' +deg_2+', '+deg_3+', '+deg_4+', '+deg_5+', '+deg_6+', '+deg_7+'], ' + number_speed + ')\\n';
                             return code;
                             };"""
     )
@@ -322,7 +322,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             var deg_7 = Blockly.Python.valueToCode(block, 'DEGREE_7', Blockly.Python.ORDER_ATOMIC);
                             var number_speed = block.getFieldValue('SPEED');
                             
-                            var code = 'jog_joints_relative([' +deg_1+', ' +deg_2+', '+deg_3+', '+deg_4+', '+deg_5+', '+deg_6+', '+deg_7+'], ' + number_speed + ')\\n';
+                            var code = 'robot_jog_joints_relative([' +deg_1+', ' +deg_2+', '+deg_3+', '+deg_4+', '+deg_5+', '+deg_6+', '+deg_7+'], ' + number_speed + ')\\n';
                             return code;
                             };"""
     )
@@ -373,7 +373,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             var value_orientation = Blockly.Python.valueToCode(block, 'ORIENTATION', Blockly.Python.ORDER_ATOMIC);
                             var number_speed = block.getFieldValue('SPEED');
                             
-                            var code = 'self.jog_cartesian('+ value_position + ',' + value_orientation +','+ number_speed +')\\n';
+                            var code = 'robot_jog_cartesian('+ value_position + ',' + value_orientation +','+ number_speed +')\\n';
                             return code;
                             };
                             """
@@ -425,7 +425,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             var value_orientation = Blockly.Python.valueToCode(block, 'ORIENTATION', Blockly.Python.ORDER_ATOMIC);
                             var number_speed = block.getFieldValue('SPEED');
                             
-                            var code = 'self.jog_cartesian_relative('+ value_position + ',' + value_orientation +','+ number_speed +')\\n';
+                            var code = 'robot_jog_cartesian_relative('+ value_position + ',' + value_orientation +','+ number_speed +')\\n';
                             return code;
                             };
                             """
@@ -461,12 +461,12 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             """
         
     )
-    blocks["tool_gripper"] = PyriBlocklyBlock(
-        name = "tool_gripper",
+    blocks["robot_tool_gripper"] = PyriBlocklyBlock(
+        name = "robot_tool_gripper",
         category = "Robotics",
         doc = "Robot Gripper Tool",
         json = """{
-                "type": "tool_gripper",
+                "type": "robot_tool_gripper",
                 "message0": "Gripper %1",
                 "args0": [
                     {
@@ -490,10 +490,10 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                 "tooltip": "Change the Gripper Mode",
                 "helpUrl": ""
                 }""",
-        python_generator = """Blockly.Python['tool_gripper'] = function(block) {
+        python_generator = """Blockly.Python['robot_tool_gripper'] = function(block) {
                             var dropdown_gripper_status = block.getFieldValue('GRIPPER_STATUS');
                             // TODO: Assemble Python into code variable.
-                            var code = 'self.tool_gripper(' + dropdown_gripper_status + ')\\n';
+                            var code = 'robot_tool_gripper(' + dropdown_gripper_status + ')\\n';
                             return code;
                             };
                             """
