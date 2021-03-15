@@ -161,142 +161,9 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
         category = "Robotics",
         doc = "Jog joints",
         json = """{
-                "type": "robot_jog_joints_absolute",
-                "lastDummyAlign0": "RIGHT",
-                "message0": "Jog Joints to %1 1 %2 2 %3 3 %4 4 %5 5 %6 6 %7 7 %8 degrees with  %9 %% speed",
-                "args0": [
-                    {
-                    "type": "input_dummy",
-                    "align": "CENTRE"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "DEGREE_1",
-                    "check": "Number",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "DEGREE_2",
-                    "check": "Number",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "DEGREE_3",
-                    "check": "Number",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "DEGREE_4",
-                    "check": "Number",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "DEGREE_5",
-                    "check": "Number",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "DEGREE_6",
-                    "check": "Number",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "DEGREE_7",
-                    "check": "Number",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "field_number",
-                    "name": "SPEED",
-                    "value": 100,
-                    "min": 0,
-                    "max": 100,
-                    "precision": 1
-                    }
-                ],
-                "inputsInline": true,
-                "previousStatement": null,
-                "nextStatement": null,
-                "colour": 0,
-                "tooltip": "",
-                "helpUrl": ""
-                }""",
-        python_generator = """Blockly.Python['robot_jog_joints_absolute'] = function(block) {
-                            var deg_1 = Blockly.Python.valueToCode(block, 'DEGREE_1', Blockly.Python.ORDER_ATOMIC);
-                            var deg_2 = Blockly.Python.valueToCode(block, 'DEGREE_2', Blockly.Python.ORDER_ATOMIC);
-                            var deg_3 = Blockly.Python.valueToCode(block, 'DEGREE_3', Blockly.Python.ORDER_ATOMIC);
-                            var deg_4 = Blockly.Python.valueToCode(block, 'DEGREE_4', Blockly.Python.ORDER_ATOMIC);
-                            var deg_5 = Blockly.Python.valueToCode(block, 'DEGREE_5', Blockly.Python.ORDER_ATOMIC);
-                            var deg_6 = Blockly.Python.valueToCode(block, 'DEGREE_6', Blockly.Python.ORDER_ATOMIC);
-                            var deg_7 = Blockly.Python.valueToCode(block, 'DEGREE_7', Blockly.Python.ORDER_ATOMIC);
-                            var number_speed = block.getFieldValue('SPEED');
-                        
-                            var code = 'robot_jog_joints([' +deg_1+', ' +deg_2+', '+deg_3+', '+deg_4+', '+deg_5+', '+deg_6+', '+deg_7+'], ' + number_speed + ')\\n';
-                            return code;
-                            };"""
-    )
-
-    blocks["robot_jog_joints_relative"] = PyriBlocklyBlock(
-        name = "robot_jog_joints_relative",
-        category = "Robotics",
-        doc = "Jog joints",
-        json = """{
-            "type": "robot_jog_joints_relative",
-            "lastDummyAlign0": "RIGHT",
-            "message0": "Jog Joints relatively %1 1 %2 2 %3 3 %4 4 %5 5 %6 6 %7 7 %8 degrees with  %9 %% speed",
+            "type": "robot_jog_joints_absolute",
+            "message0": "Jog Joints with speed %1 to degrees %2",
             "args0": [
-                {
-                "type": "input_dummy",
-                "align": "CENTRE"
-                },
-                {
-                "type": "input_value",
-                "name": "DEGREE_1",
-                "check": "Number",
-                "align": "RIGHT"
-                },
-                {
-                "type": "input_value",
-                "name": "DEGREE_2",
-                "check": "Number",
-                "align": "RIGHT"
-                },
-                {
-                "type": "input_value",
-                "name": "DEGREE_3",
-                "check": "Number",
-                "align": "RIGHT"
-                },
-                {
-                "type": "input_value",
-                "name": "DEGREE_4",
-                "check": "Number",
-                "align": "RIGHT"
-                },
-                {
-                "type": "input_value",
-                "name": "DEGREE_5",
-                "check": "Number",
-                "align": "RIGHT"
-                },
-                {
-                "type": "input_value",
-                "name": "DEGREE_6",
-                "check": "Number",
-                "align": "RIGHT"
-                },
-                {
-                "type": "input_value",
-                "name": "DEGREE_7",
-                "check": "Number",
-                "align": "RIGHT"
-                },
                 {
                 "type": "field_number",
                 "name": "SPEED",
@@ -304,6 +171,46 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                 "min": 0,
                 "max": 100,
                 "precision": 1
+                },
+                {
+                "type": "input_value",
+                "name": "JOINT_VECTOR"
+                }
+            ],
+            "previousStatement": null,
+            "nextStatement": null,
+            "colour": 0,
+            "tooltip": "",
+            "helpUrl": ""
+            }""",
+        python_generator = """Blockly.Python['robot_jog_joints_absolute'] = function(block) {
+                            
+                            var number_speed = block.getFieldValue('SPEED');
+                            var value_joint_vector = Blockly.Python.valueToCode(block, 'JOINT_VECTOR', Blockly.Python.ORDER_ATOMIC);
+                            var code = 'robot_jog_joints(' + value_joint_vector + ', ' + number_speed + ')\\n';
+                            return code;
+                            };"""
+    )
+
+    blocks["robot_jog_joints_relative"] = PyriBlocklyBlock(
+        name = "robot_jog_joints_relative",
+        category = "Robotics",
+        doc = "Jog joints relatively",
+        json = """{
+            "type": "robot_jog_joints_relative",
+            "message0": "Jog Joints relatively with speed %1 degrees %2",
+            "args0": [
+                {
+                "type": "field_number",
+                "name": "SPEED",
+                "value": 100,
+                "min": 0,
+                "max": 100,
+                "precision": 1
+                },
+                {
+                "type": "input_value",
+                "name": "JOINT_DIFF_VECTOR"
                 }
             ],
             "previousStatement": null,
@@ -313,16 +220,10 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
             "helpUrl": ""
             }""",
         python_generator = """Blockly.Python['robot_jog_joints_relative'] = function(block) {
-                            var deg_1 = Blockly.Python.valueToCode(block, 'DEGREE_1', Blockly.Python.ORDER_ATOMIC);
-                            var deg_2 = Blockly.Python.valueToCode(block, 'DEGREE_2', Blockly.Python.ORDER_ATOMIC);
-                            var deg_3 = Blockly.Python.valueToCode(block, 'DEGREE_3', Blockly.Python.ORDER_ATOMIC);
-                            var deg_4 = Blockly.Python.valueToCode(block, 'DEGREE_4', Blockly.Python.ORDER_ATOMIC);
-                            var deg_5 = Blockly.Python.valueToCode(block, 'DEGREE_5', Blockly.Python.ORDER_ATOMIC);
-                            var deg_6 = Blockly.Python.valueToCode(block, 'DEGREE_6', Blockly.Python.ORDER_ATOMIC);
-                            var deg_7 = Blockly.Python.valueToCode(block, 'DEGREE_7', Blockly.Python.ORDER_ATOMIC);
-                            var number_speed = block.getFieldValue('SPEED');
                             
-                            var code = 'robot_jog_joints_relative([' +deg_1+', ' +deg_2+', '+deg_3+', '+deg_4+', '+deg_5+', '+deg_6+', '+deg_7+'], ' + number_speed + ')\\n';
+                            var number_speed = block.getFieldValue('SPEED');
+                            var value_joint_vector = Blockly.Python.valueToCode(block, 'JOINT_DIFF_VECTOR', Blockly.Python.ORDER_ATOMIC);
+                            var code = 'robot_jog_joints_relative(' + value_joint_vector + ', ' + number_speed + ')\\n';
                             return code;
                             };"""
     )
