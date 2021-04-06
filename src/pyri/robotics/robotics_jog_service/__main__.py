@@ -3,7 +3,6 @@
 import sys
 import RobotRaconteur as RR
 RRN=RR.RobotRaconteurNode.s
-from RobotRaconteur.Client import *     #import RR client library to connect to robot 
 import numpy as np
 import argparse
 import RobotRaconteurCompanion as RRC
@@ -62,7 +61,7 @@ class JogJointSpace_impl(object):
                     joint_vel = np.zeros((self.num_joints,))
                     joint_vel[q_i-1] = sign*self.joint_vel_limits[q_i-1]*0.25
 
-                    self.jog_joints_with_limits2(cur_q, joint_vel,0.2, False)
+                    self.jog_joints_with_limits2(cur_q, joint_vel*0.2,0.2, False)
             except:
                 # print("Specified joints might be out of range222")
                 import traceback
@@ -295,14 +294,14 @@ class JogJointSpaceService_impl:
         self._device_manager.refresh_devices(5)
 
     def get_jog(self, robot_name):
-        print(f"robot_name type: {type(robot_name)}")
-        #TODO: Fix type of robot_name
-        return JogJointSpace_impl(self._device_manager.get_device_subscription(robot_name.decode("utf-8"))), "tech.pyri.robotics.pluginJogJointSpace.JogJointSpace"
+        
+        
+        return JogJointSpace_impl(self._device_manager.get_device_subscription(robot_name)), "tech.pyri.robotics.pluginJogJointSpace.JogJointSpace"
 
     def get_tool(self, tool_name):
-        #TODO: Fix type of robot_name
         
-        return JogTool_impl(self._device_manager.get_device_subscription(tool_name.decode("utf-8"))), "tech.pyri.robotics.pluginJogJointSpace.JogTool"
+        
+        return JogTool_impl(self._device_manager.get_device_subscription(tool_name)), "tech.pyri.robotics.pluginJogJointSpace.JogTool"
 
 
 

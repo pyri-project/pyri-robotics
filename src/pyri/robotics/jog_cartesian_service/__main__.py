@@ -3,7 +3,6 @@
 import sys
 import RobotRaconteur as RR
 RRN=RR.RobotRaconteurNode.s
-from RobotRaconteur.Client import *     #import RR client library to connect to robot 
 import numpy as np
 
 from . import general_robotics_toolbox as rox
@@ -716,9 +715,9 @@ class JogCartesianSpaceService_impl:
         self._device_manager.refresh_devices(5)
 
     def get_jog(self, robot_name):
-        print(f"robot_name type: {type(robot_name)}")
-        #TODO: Fix type of robot_name
-        return JogCartesianSpace_impl(self._device_manager.get_device_subscription(robot_name.decode("utf-8"))), "tech.pyri.robotics.pluginJogCartesianSpace.JogCartesianSpace"
+        
+        
+        return JogCartesianSpace_impl(self._device_manager.get_device_subscription(robot_name)), "tech.pyri.robotics.pluginJogCartesianSpace.JogCartesianSpace"
 
 def main():
 

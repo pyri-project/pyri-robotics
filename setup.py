@@ -23,7 +23,6 @@ setup(
         'pyri.plugins.sandbox_functions': ['pyri-robotics-sandbox-functions=pyri.robotics.sandbox_functions:get_sandbox_functions_factory'],
         'pyri.plugins.device_type_adapter': ['pyri-robotics-type-adapter = pyri.robotics.device_type_adapter:get_device_type_adapter_factory'],
         'pyri.plugins.blockly': ['pyri-robotics-plugin-blockly=pyri.robotics.blockly:get_blockly_factory'],
-        'console_scripts': ['pyri-robotics-jog-joint-service = pyri.robotics.jog_joint_service.__main__:main',
-            'pyri-robotics-jog-cartesian-service = pyri.robotics.jog_cartesian_service.__main__:main']
+        'console_scripts': ['pyri-robotics-jog-service = pyri.robotics.robotics_jog_service.__main__:main']
     }
 )
