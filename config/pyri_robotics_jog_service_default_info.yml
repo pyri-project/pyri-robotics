@@ -1,0 +1,19 @@
+device:
+  name: pyri_robotics_jog_service
+manufacturer:
+  name: PyRI_Project
+  uuid: 244389f3-35d5-4f9f-a244-c89649ce2a18
+model:
+  name: pyri_robotics_jog_service
+  uuid: d8a3b68c-f786-4d6c-802a-fcfa33e3b7d9
+user_description: Robotics jog controller service
+serial_number: 1
+device_classes:
+  - class_identifier:
+      name: pyri_robotics
+      uuid: cc6da689-a9e0-48e1-9020-1b247514e229
+    subclasses:
+      - robotics_jog
+implemented_types:
+  - com.robotraconteur.device.Device
+  - tech.pyri.robotics.jog.RoboticsJogService
