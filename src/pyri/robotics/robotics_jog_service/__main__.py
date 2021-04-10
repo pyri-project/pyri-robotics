@@ -13,10 +13,12 @@ from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
 
 import time
 import threading
+import traceback
 
 class RoboticsJog_impl(object):
-    def __init__(self, robot_sub):
+    def __init__(self, parent, robot_sub):
         self.robot_sub = robot_sub
+        self.parent=parent
 
         res, robot = self.robot_sub.TryGetDefaultClient()
         if res:
@@ -30,6 +32,12 @@ class RoboticsJog_impl(object):
         self.dt = 0.01 #seconds, amount of time continuosly jog joints
 
         self.service_path = None
+        self.jog_joints_joystick_group = -1
+        self.jog_joints_joystick_last_enable_time = 0
+
+        self._lock = threading.Lock()
+        self.joystick_last_command_time = 0
+        
 
     def RRServiceObjectInit(self, ctx, service_path):
         self.service_path = service_path
@@ -66,7 +74,7 @@ class RoboticsJog_impl(object):
                     joint_vel = np.zeros((self.num_joints,))
                     joint_vel[q_i-1] = sign*self.joint_vel_limits[q_i-1]*0.25
 
-                    self.jog_joints_with_limits2(cur_q, float(speed_perc)*0.01*joint_vel,0.2, False)
+                    self.jog_joints_with_limits2(float(speed_perc)*0.01*joint_vel,0.2, False)
             except:
                 # print("Specified joints might be out of range222")
                 import traceback
@@ -90,44 +98,18 @@ class RoboticsJog_impl(object):
                 import traceback
                 print(traceback.format_exc())
 
-    def jog_joints_with_limits2(self,joint_position, joint_velocity, timeout, wait=True):
-        if not (joint_position <= self.joint_upper_limits).all() or not (joint_position >= self.joint_lower_limits).all():
-            print("Specified joints might be out of range")
-        else:
-            try:
-                
-                # Trim joint positions according to number of joints
-                joint_velocity = joint_velocity[:self.num_joints]
-                # self.robot.jog_joint(joint_position, max_velocity, relative, wait)
-                self.robot.jog_joint(joint_velocity, timeout, wait)
-            except:
-                # print("Specified joints might be out of range222")
-                import traceback
-                print(traceback.format_exc())
-
-    def jog_joints_gamepad(self,joint_speed_constants):
-        print("Jog Joints Gamepad is called")
-        robot = self.robot
-        if robot is not None:
-                        
-            # get the current joint angles
-            cur_q = self.get_current_joint_positions()
-
-            # Trim joint speed constants accordingto number of joints
-            joint_speed_constants = joint_speed_constants[:self.num_joints]
-
-            signs = np.divide(np.abs(joint_speed_constants),joint_speed_constants)
-            np.nan_to_num(signs, copy=False)
-
-            joint_diff = np.ones((self.num_joints,))
-            joint_diff = np.multiply(signs,np.deg2rad(self.degree_diff))
-
-            # self.jog_joints_with_limits((cur_q + joint_diff),(cur_q + joint_diff),joint_diff, self.joint_vel_limits,True,True)
-            self.jog_joints_with_limits((cur_q + joint_diff), self.joint_vel_limits,False)
-
-        else:
-            # Give an error message to show that the robot is not connected
-            print("Robot is not connected to RoboticsJog service yet!")
+    # TODO: Remove this function
+    def jog_joints_with_limits2(self,joint_velocity, timeout, wait=True):
+        try:
+            
+            # Trim joint positions according to number of joints
+            joint_velocity = joint_velocity[:self.num_joints]
+            # self.robot.jog_joint(joint_position, max_velocity, relative, wait)
+            self.robot.jog_joint(joint_velocity, timeout, wait)
+        except:
+            # print("Specified joints might be out of range222")
+            import traceback
+            print(traceback.format_exc())
 
     def jog_joints_zeros(self):
         print("Jog Joints Zeros is called")
@@ -196,6 +178,56 @@ class RoboticsJog_impl(object):
             # Give an error message to show that the robot is not connected
             print("Robot is not connected to RoboticsJog service yet!")
 
+    def enable_jog_joints_joystick(self, group, speed_perc):
+        assert group == 0 or group == 1, "Group must be 0 or 1"
+        assert self.num_joints == 6 or self.num_joints == 7, "Jog joystick only available for 6 or 7 axis robots"
+        with self._lock:
+            self.jog_joints_joystick_group = group
+            self.jog_joints_joystick_speed_perc = float(speed_perc)
+            self.jog_joints_joystick_last_enable_time = time.time()
+        self.parent.joystick_enabled()
+
+    def disable_jog_joints_joystick(self):
+        with self._lock:
+            self.jog_joints_joystick_group = -1
+            
+
+    def joystick_state_cb(self, joy_state):
+        with self._lock:
+            group = self.jog_joints_joystick_group
+            if group < 0:
+                return
+
+            # Rate limit command sends
+            now = time.time()            
+            if now - self.jog_joints_joystick_last_enable_time > 0.2:
+                self.jog_joints_joystick_group = -1
+                return
+            if now - self.joystick_last_command_time < 0.05:
+                return
+            self.joystick_last_command_time = now
+        try:
+            joy_vals = joy_state.axes / 32767.0
+
+            jog_command = np.zeros((self.num_joints,),dtype=np.float64)
+
+            if self.num_joints == 6:
+                if group == 0:
+                    jog_command[0:3] = joy_vals[0:3]
+                else:
+                    jog_command[3:6] = joy_vals[0:3]
+            elif self.num_joints == 7:
+                if group == 0:
+                    jog_command[0:4] = joy_vals[0:4]
+                else:
+                    jog_command[4:7] = joy_vals[0:3]
+            else:
+                return
+
+            jog_command = 0.01*self.jog_joints_joystick_speed_perc*np.multiply(jog_command,self.joint_vel_limits)*0.25
+            self.jog_joints_with_limits2(jog_command,0.2, False)
+        except:
+            traceback.print_exc()
 
     def assign_robot_details(self, robot):
         
@@ -285,19 +317,22 @@ class RoboticsJogService_impl:
         self._device_manager.device_removed += self._device_removed
         self._device_manager.refresh_devices(5)
 
+        self._joystick_sub = None
+        self._joystick_wire_sub = None
+
     def RRServiceObjectInit(self, ctx, service_path):
         self.service_path = service_path
         self.ctx = ctx
 
     def get_jog(self, robot_name):        
         with self._lock:
-            jog = RoboticsJog_impl(self._device_manager.get_device_subscription(robot_name))        
+            jog = RoboticsJog_impl(self, self._device_manager.get_device_subscription(robot_name))        
             self._jogs[robot_name] = jog
             return jog, "tech.pyri.robotics.jog.JogRobot"
 
     def get_tool(self, tool_name):
         with self._lock:
-            tool = JogTool_impl(self._device_manager.get_device_subscription(tool_name))
+            tool = JogTool_impl(self, self._device_manager.get_device_subscription(tool_name))
             self._tools[tool_name] = tool
             return tool, "tech.pyri.robotics.jog.JogTool"
 
@@ -313,6 +348,44 @@ class RoboticsJogService_impl:
                     self.ctx.ReleaseServicePath(service_path)
                 except:
                     pass
+            if local_device_name in self._tools:
+                service_path = self._tools[local_device_name].service_path
+                del self._tools[local_device_name]
+                try:
+                    self.ctx.ReleaseServicePath(service_path)
+                except:
+                    pass
+
+            if local_device_name == "joystick":
+                if self._joystick_sub is not None:
+                    try:
+                        self._joystick_sub.Close()
+                        self._joystick_wire_sub.Close()
+                    except:
+                        pass
+                    
+
+    def joystick_enabled(self):
+        with self._lock:
+            if self._joystick_sub is None or self._joystick_wire_sub is None:
+                self._joystick_sub = self._device_manager.get_device_subscription("joystick")
+                self._joystick_wire_sub = self._joystick_sub.SubscribeWire("joystick_state")
+                self._joystick_wire_sub.WireValueChanged += self._joystick_state_cb
+
+    def joystick_disabled(self):
+        pass
+
+    def _joystick_state_cb(self, sub, joy_state, ts):
+        with self._lock:
+            jogs = list(self._jogs.values())
+
+        for j in jogs:
+            try:
+                j.joystick_state_cb(joy_state)
+            except:
+                traceback.print_exc()
+                
+    
 def main():
 
     parser = argparse.ArgumentParser(description="PyRI Jog Joint Service")    
