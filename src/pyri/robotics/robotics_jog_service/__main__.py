@@ -53,7 +53,7 @@ class RoboticsJog_impl(object):
             print("Robot is not connected to RoboticsJog service yet!")
 
 
-    def jog_joints(self, q_i, sign):
+    def jog_joints(self, q_i, sign, speed_perc):
         print("Jog Joints is called")
         robot = self.robot
         if robot is not None:
@@ -66,7 +66,7 @@ class RoboticsJog_impl(object):
                     joint_vel = np.zeros((self.num_joints,))
                     joint_vel[q_i-1] = sign*self.joint_vel_limits[q_i-1]*0.25
 
-                    self.jog_joints_with_limits2(cur_q, joint_vel*0.2,0.2, False)
+                    self.jog_joints_with_limits2(cur_q, float(speed_perc)*0.01*joint_vel,0.2, False)
             except:
                 # print("Specified joints might be out of range222")
                 import traceback
@@ -140,14 +140,14 @@ class RoboticsJog_impl(object):
             # Give an error message to show that the robot is not connected
             print("Robot is not connected to RoboticsJog service yet!")
 
-    def jog_joints_to_angles(self, joint_position):
+    def jog_joints_to_angles(self, joint_position, speed_perc):
         print("Jog Joints to Angles is called")
         # Similar to jog_joints_with_limits. But,
         # Moves the robot to the specified joint angles with max speed
         robot = self.robot
         if robot is not None:
             
-            self.jog_joints_with_limits(joint_position[:self.num_joints], self.joint_vel_limits,True)
+            self.jog_joints_with_limits(joint_position[:self.num_joints], float(speed_perc)*0.01*self.joint_vel_limits,True)
 
         else:
             # Give an error message to show that the robot is not connected

@@ -8,10 +8,10 @@ using com.robotraconteur.device.Device
 using com.robotraconteur.device.DeviceInfo
 
 object JogRobot
-    function void jog_joints(int32 q_i, int32 sign)
+    function void jog_joints(int32 q_i, int32 sign, double speed_perc)
     function void jog_joints_with_limits(double[] joint_position, double[] max_velocity,bool wait)
     function void jog_joints_zeros()
-    function void jog_joints_to_angles(double[] joint_position)
+    function void jog_joints_to_angles(double[] joint_position, double speed_perc)
     function void stop_joints()
 
     function void setf_halt_mode()
