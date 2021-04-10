@@ -38,9 +38,16 @@ class RoboticsJog_impl(object):
         self.service_path = None
         self.jog_joints_joystick_group = -1
         self.jog_joints_joystick_last_enable_time = 0
+        self.jog_joints_joystick_speed_perc = 10
+
+        self.jog_cartesian_joystick_last_enable_time = 0
+        self.jog_cartesian_joystick_frame = None
+        self.jog_cartesian_joystick_speed_perc = 10
 
         self._lock = threading.Lock()
         self.joystick_last_command_time = 0
+
+        self.joystick_deadzone = 0.25
 
     def RRServiceObjectInit(self, ctx, service_path):
         self.service_path = service_path
@@ -194,41 +201,90 @@ class RoboticsJog_impl(object):
         with self._lock:
             self.jog_joints_joystick_group = -1
             
+    def enable_jog_cartesian_joystick(self, speed_perc, frame):
+        assert frame == "robot", "Only robot frame currently supported"        
+        with self._lock:
+            self.jog_cartesian_joystick_frame = frame
+            self.jog_cartesian_joystick_speed_perc = float(speed_perc)
+            self.jog_cartesian_joystick_last_enable_time = time.time()
+        self.parent.joystick_enabled()
+
+    def disable_jog_cartesian_joystick(self):
+        with self._lock:
+            self.jog_cartesian_joystick_frame = None
 
     def joystick_state_cb(self, joy_state):
         with self._lock:
+
             group = self.jog_joints_joystick_group
-            if group < 0:
+            frame = self.jog_cartesian_joystick_frame
+            if group < 0 and frame is None:
+                return
+                        
+            # Rate limit command sends
+            now = time.time()
+            
+            have_command = False
+            if now - self.jog_joints_joystick_last_enable_time > 0.2:
+                self.jog_joints_joystick_group = -1                
+            else:
+                have_command = True
+            if now - self.jog_cartesian_joystick_last_enable_time > 0.2:
+                self.jog_cartesian_joystick_frame = None
+            else:
+                have_command = True
+
+            if not have_command:
                 return
 
-            # Rate limit command sends
-            now = time.time()            
-            if now - self.jog_joints_joystick_last_enable_time > 0.2:
-                self.jog_joints_joystick_group = -1
-                return
             if now - self.joystick_last_command_time < 0.05:
                 return
             self.joystick_last_command_time = now
         try:
             joy_vals = joy_state.axes / 32767.0
 
-            jog_command = np.zeros((self.num_joints,),dtype=np.float64)
+            for i in range(len(joy_vals)):
+                if joy_vals[i] > 0:
+                    if joy_vals[i] < self.joystick_deadzone:
+                        joy_vals[i] = 0
+                    else:
+                        joy_vals[i] = (joy_vals[i]-self.joystick_deadzone) * (1-self.joystick_deadzone)
+                if joy_vals[i] < 0:
+                    if -joy_vals[i] < self.joystick_deadzone:
+                        joy_vals[i] = 0
+                    else:
+                        joy_vals[i] = (joy_vals[i]+self.joystick_deadzone) * (1-self.joystick_deadzone)
 
-            if self.num_joints == 6:
-                if group == 0:
-                    jog_command[0:3] = joy_vals[0:3]
-                else:
-                    jog_command[3:6] = joy_vals[0:3]
-            elif self.num_joints == 7:
-                if group == 0:
-                    jog_command[0:4] = joy_vals[0:4]
-                else:
-                    jog_command[4:7] = joy_vals[0:3]
-            else:
-                return
+            if group >= 0:
+                jog_command = np.zeros((self.num_joints,),dtype=np.float64)
 
-            jog_command = 0.01*self.jog_joints_joystick_speed_perc*np.multiply(jog_command,self.joint_vel_limits)*0.25
-            self.jog_joints_with_limits2(jog_command,0.2, False)
+                if self.num_joints == 6:
+                    if group == 0:
+                        jog_command[0:3] = joy_vals[0:3]
+                    else:
+                        jog_command[3:6] = joy_vals[0:3]
+                elif self.num_joints == 7:
+                    if group == 0:
+                        jog_command[0:4] = joy_vals[0:4]
+                    else:
+                        jog_command[4:7] = joy_vals[0:3]
+                else:
+                    return
+
+                jog_command = 0.01*self.jog_joints_joystick_speed_perc*np.multiply(jog_command,self.joint_vel_limits)*0.25
+                self.jog_joints_with_limits2(jog_command,0.2, False)
+            elif frame is not None:
+                if frame == "robot":
+                    R_axis = joy_vals[3:6]*np.deg2rad(15)
+                    P_axis = joy_vals[0:3]*0.254
+
+                    R_spacemouse = rox.rot([1,0,0],np.pi)
+                    R_axis = R_spacemouse @ R_axis
+                    P_axis = R_spacemouse @ P_axis
+
+                    #TODO: Rotate frame about X 180 degrees
+                    qdot = self.update_qdot2(R_axis,P_axis, self.jog_cartesian_joystick_speed_perc) 
+                    self.robot.jog_joint(qdot, 0.2, False)
         except:
             traceback.print_exc()
 

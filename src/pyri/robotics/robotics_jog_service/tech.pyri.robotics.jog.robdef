@@ -21,6 +21,9 @@ object JogRobot
 
     function void jog_cartesian(SpatialVelocity vel, double speed_perc, string frame)
 
+    function void enable_jog_cartesian_joystick(double speed_perc, string frame)
+    function void disable_jog_cartesian_joystick()
+
     function void setf_halt_mode()
     function void setf_jog_mode()
 
