@@ -17,6 +17,8 @@ object JogRobot
     function void enable_jog_joints_joystick(uint32 group, double speed_perc)
     function void disable_jog_joints_joystick()
 
+    function void jog_cartesian4(double[] P_axis, double[] R_axis)
+
     function void setf_halt_mode()
     function void setf_jog_mode()
 
