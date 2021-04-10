@@ -10,24 +10,27 @@ from pyri.device_manager_client import DeviceManagerClient
 import importlib.resources as resources
 from RobotRaconteurCompanion.Util.InfoFileLoader import InfoFileLoader
 from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
+from RobotRaconteurCompanion.Util.RobotUtil import RobotUtil
 
 import time
 import threading
 import traceback
+import general_robotics_toolbox as rox
 
 class RoboticsJog_impl(object):
     def __init__(self, parent, robot_sub):
         self.robot_sub = robot_sub
         self.parent=parent
 
+        self.robot_rox = None #Robotics Toolbox robot object
+        self.robot_util = RobotUtil()
+
         res, robot = self.robot_sub.TryGetDefaultClient()
         if res:
             self.assign_robot_details(robot)
 
         robot_sub.ClientConnected += lambda a, b, robot: self.assign_robot_details(robot)
-        
-        self.robot_rox = None #Robotics Toolbox robot object
-
+                
         self.degree_diff = 10 # in degrees
         self.dt = 0.01 #seconds, amount of time continuosly jog joints
 
@@ -37,7 +40,6 @@ class RoboticsJog_impl(object):
 
         self._lock = threading.Lock()
         self.joystick_last_command_time = 0
-        
 
     def RRServiceObjectInit(self, ctx, service_path):
         self.service_path = service_path
@@ -266,6 +268,8 @@ class RoboticsJog_impl(object):
             self.joint_acc_limits = np.asarray(self.joint_acc_limits)                
 
             self.num_joints = len(self.joint_info)
+
+            self.robot_rox = self.robot_util.robot_info_to_rox_robot(self.robot_info,0)
         else:
             # Give an error message to show that the robot is not connected
             print("Assign robot details failed. Robot is not connected to RoboticsJog service yet!")
