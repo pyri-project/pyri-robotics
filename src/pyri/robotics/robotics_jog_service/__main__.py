@@ -16,6 +16,7 @@ import time
 import threading
 import traceback
 import general_robotics_toolbox as rox
+from scipy.optimize import lsq_linear
 
 class RoboticsJog_impl(object):
     def __init__(self, parent, robot_sub):
@@ -289,71 +290,61 @@ class RoboticsJog_impl(object):
 
     ## Cartesian jog mode support
 
-    def jog_cartesian4(self, P_axis, R_axis):
-        print("Jog Joints4 is called")
+    def jog_cartesian(self, vel, speed_perc, frame ):
+        print("jog_cartesian is called")
 
         if self.robot is not None:
-            print("Jog in Cartesian Space with command P_axis" + str(P_axis) + "and R_axis"+ str(R_axis)) 
-
-            if self.robot.command_mode != self.jog_mode:
-                # Put the robot to JOG mode
-                self.robot.command_mode = self.halt_mode
-                # time.sleep(0.1)
-                self.robot.command_mode = self.jog_mode
-                # time.sleep(0.1)
-
+            vel2 = RRN.NamedArrayToArray(vel)[0]
+            R_axis = vel2[0:3]*np.deg2rad(15)
+            P_axis = vel2[3:6]*0.254
             ## Jog the robot in cartesian space
             try:
                 # calculate the required joint speeds (q_dot)
-                qdot = self.update_qdot2(R_axis,P_axis) 
+                qdot = self.update_qdot2(R_axis,P_axis, speed_perc) 
 
-                now=time.time()
-                while time.time()- now < self.dt:
-                    self.robot.jog_joint(qdot, 10*self.dt, False)
+                self.robot.jog_joint(qdot, 0.2, False)
             except:
-                print("Specified joints might be out of range")
-                import traceback
-                print(traceback.format_exc())
-                # raise
+                traceback.print_exc() 
 
         else:
             # Give an error message to show that the robot is not connected
             print("Robot is not connected to JogCartesianSpace service yet!")
 
-    def update_qdot2(self, R_axis, P_axis): # inverse velocity kinematics that uses LSQ Linear solver        
+    def update_qdot2(self, R_axis, P_axis, speed_perc): # inverse velocity kinematics that uses LSQ Linear solver        
 
         # Get the corresponding joint angles at that time
         d_q = self.get_current_joint_positions()
         q_cur = d_q.reshape((self.num_joints,1)) 
 
         # Update the end effector pose info    
-        pose = rox.fwdkin(self.robot_rox,q_cur)
+        pose = rox.fwdkin(self.robot_rox,q_cur.flatten())
         R_cur = pose.R
         p_cur = pose.p
         
         #calculate current Jacobian
-        J0T = rox.robotjacobian(self.robot_rox,q_cur)
+        J0T = rox.robotjacobian(self.robot_rox,q_cur.flatten())
         
         # Transform Jacobian to End effector frame from the base frame
         Tr = np.zeros((6,6))
         Tr[:3,:3] = R_cur.T 
         Tr[3:,3:] = R_cur.T
-        J0T = Tr @ J0T
+        #J0T = Tr @ J0T
         
         # Normalize R_axis and P_axis
-        R_axis = R_axis/(np.linalg.norm(R_axis))
-        P_axis = P_axis/(np.linalg.norm(P_axis))
+        #R_axis = R_axis/(np.linalg.norm(R_axis))
+        #P_axis = P_axis/(np.linalg.norm(P_axis))
 
         # Create the corresponding velocities
-        w = R_axis * self.rotate_angle
-        v = P_axis * self.move_distance
+        w = R_axis #* self.rotate_angle
+        v = P_axis #* self.move_distance
 
-        b = np.concatenate([w,v])
+        b = np.concatenate([w,v])*0.01*speed_perc
         np.nan_to_num(b, copy=False, nan=0.0, posinf=None, neginf=None)
         # print(b)
         # print(J0T)
 
-        res = lsq_linear(J0T,b,bounds=(-1.0*self.joint_vel_limits,self.joint_vel_limits))
+        joint_vel_limits = 0.01*speed_perc*self.joint_vel_limits
+        res = lsq_linear(J0T,b,bounds=(-1.0*joint_vel_limits,joint_vel_limits))
 
         if res.success: 
             qdot_star = res.x 
@@ -420,7 +411,7 @@ class RoboticsJogService_impl:
 
     def get_tool(self, tool_name):
         with self._lock:
-            tool = JogTool_impl(self, self._device_manager.get_device_subscription(tool_name))
+            tool = JogTool_impl(self._device_manager.get_device_subscription(tool_name))
             self._tools[tool_name] = tool
             return tool, "tech.pyri.robotics.jog.JogTool"
 

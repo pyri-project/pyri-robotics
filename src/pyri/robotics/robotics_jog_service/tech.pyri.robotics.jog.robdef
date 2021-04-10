@@ -3,9 +3,11 @@ service tech.pyri.robotics.jog
 stdver 0.10.0
 
 import com.robotraconteur.device
+import com.robotraconteur.geometry
 
 using com.robotraconteur.device.Device
 using com.robotraconteur.device.DeviceInfo
+using com.robotraconteur.geometry.SpatialVelocity
 
 object JogRobot
     function void jog_joints(int32 q_i, int32 sign, double speed_perc)
@@ -17,7 +19,7 @@ object JogRobot
     function void enable_jog_joints_joystick(uint32 group, double speed_perc)
     function void disable_jog_joints_joystick()
 
-    function void jog_cartesian4(double[] P_axis, double[] R_axis)
+    function void jog_cartesian(SpatialVelocity vel, double speed_perc, string frame)
 
     function void setf_halt_mode()
     function void setf_jog_mode()

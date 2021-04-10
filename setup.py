@@ -13,7 +13,8 @@ setup(
     zip_safe=False,
     install_requires=[
         'pyri-common',
-        'qpsolvers'
+        'qpsolvers',
+        'scipy'
     ],
     tests_require=['pytest','pytest-asyncio'],
     extras_require={
