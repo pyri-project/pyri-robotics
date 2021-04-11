@@ -47,7 +47,7 @@ class RoboticsJog_impl(object):
         self._lock = threading.Lock()
         self.joystick_last_command_time = 0
 
-        self.joystick_deadzone = 0.25
+        self.joystick_deadzone = 0.35
 
     def RRServiceObjectInit(self, ctx, service_path):
         self.service_path = service_path
@@ -275,7 +275,7 @@ class RoboticsJog_impl(object):
                 self.jog_joints_with_limits2(jog_command,0.2, False)
             elif frame is not None:
                 if frame == "robot":
-                    R_axis = joy_vals[3:6]*np.deg2rad(15)
+                    R_axis = joy_vals[3:6]*np.deg2rad(45)
                     P_axis = joy_vals[0:3]*0.254
 
                     R_spacemouse = rox.rot([1,0,0],np.pi)
@@ -351,7 +351,7 @@ class RoboticsJog_impl(object):
 
         if self.robot is not None:
             vel2 = RRN.NamedArrayToArray(vel)[0]
-            R_axis = vel2[0:3]*np.deg2rad(15)
+            R_axis = vel2[0:3]*np.deg2rad(45)
             P_axis = vel2[3:6]*0.254
             ## Jog the robot in cartesian space
             try:
