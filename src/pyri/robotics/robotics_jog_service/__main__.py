@@ -422,6 +422,9 @@ class JogTool_impl:
     def __init__(self, tool_sub):
         self.tool_sub = tool_sub
 
+    def RRServiceObjectInit(self, ctx, service_path):
+        self.service_path = service_path
+
     def open(self):
         self.tool_sub.GetDefaultClient().open()
 
