@@ -50,8 +50,8 @@ class RoboticsMotion_impl(object):
     def _device_removed(self, local_device_name):
         pass
 
-    def grab_object_planar(self, robot_local_device_name, tool_local_device_name, robot_origin_calib_global_name,
-        reference_pose_global_name, object_world_pose, z_offset_before, z_offset_grab, speed_perc):
+    def _do_grab_object_planar(self, robot_local_device_name, tool_local_device_name, robot_origin_calib_global_name,
+        reference_pose_global_name, object_x, object_y, object_theta, z_offset_before, z_offset_grab, speed_perc):
 
         var_storage = self.device_manager.get_device_client("variable_storage",0.1)
 
@@ -68,7 +68,7 @@ class RoboticsMotion_impl(object):
         rox_robot = self._robot_util.robot_info_to_rox_robot(robot_info,0)
 
         # The object's pose in world coordinates
-        T_object = rox.Transform(rox.rot([0.,0.,1.],object_world_pose["orientation"]),[object_world_pose["position"]["x"],object_world_pose["position"]["y"],0.])
+        T_object = rox.Transform(rox.rot([0.,0.,1.],object_theta),[object_x,object_y,0.])
 
         # The robot's reference pose in its own frame
         T_reference_pose_r = rox.fwdkin(rox_robot, np.deg2rad(reference_pose.data))
@@ -123,6 +123,28 @@ class RoboticsMotion_impl(object):
         # robot.jog_freespace(q_grab_before,max_velocity*.25,True)
         return gen
 
+    def grab_object_planar(self, robot_local_device_name, tool_local_device_name, robot_origin_calib_global_name,
+        reference_pose_global_name, object_world_pose, z_offset_before, z_offset_grab, speed_perc):
+        
+        object_x = object_world_pose["position"]["x"]
+        object_y = object_world_pose["position"]["y"]
+        object_theta = object_world_pose["orientation"]
+        
+        return self._do_grab_object_planar(robot_local_device_name, tool_local_device_name, robot_origin_calib_global_name,
+            reference_pose_global_name, object_x, object_y, object_theta, z_offset_before, z_offset_grab, speed_perc)
+
+    def grab_object_planar2(self, robot_local_device_name, tool_local_device_name, robot_origin_calib_global_name,
+        reference_pose_global_name, object_world_pose, z_offset_before, z_offset_grab, speed_perc):
+
+        object_x = object_world_pose["position"]["x"]
+        object_y = object_world_pose["position"]["y"]
+        object_rpy = self._geom_util.quaternion_to_rpy(object_world_pose["orientation"])
+        assert np.abs(object_rpy[0]) < np.deg2rad(5), "Object is not flat on surface!"
+        assert np.abs(object_rpy[1]) < np.deg2rad(5), "Object is not flat on surface!"
+        object_theta = object_rpy[2]
+
+        return self._do_grab_object_planar(robot_local_device_name, tool_local_device_name, robot_origin_calib_global_name,
+            reference_pose_global_name, object_x, object_y, object_theta, z_offset_before, z_offset_grab, speed_perc)
 
 
 class PickPlaceMotionGenerator:

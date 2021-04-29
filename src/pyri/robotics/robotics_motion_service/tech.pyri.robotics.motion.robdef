@@ -35,6 +35,6 @@ object RoboticsMotionService
     function RobotMotionStatus{generator} grab_object_planar(string robot_local_device_name, string tool_local_device_name, string robot_origin_calib_global_name, \
         string reference_pose_global_name, Pose2D object_world_pose, double z_offset_before, double z_offset_grab, double speed_perc)
 
-    function RobotMotionStatus{generator} grab_object_planar2(string robot_local_device_name, string tool_local_device_name, string reference_pose_global_name,\
-        Pose object_world_pose, double z_offset_before, double z_offset_grab, double speed)
+    function RobotMotionStatus{generator} grab_object_planar2(string robot_local_device_name, string tool_local_device_name, string robot_origin_calib_global_name, \
+        string reference_pose_global_name, Pose object_world_pose, double z_offset_before, double z_offset_grab, double speed_perc)
 end
