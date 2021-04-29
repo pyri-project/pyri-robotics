@@ -369,6 +369,78 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             """
         
     )
+
+    blocks["robot_planar_grab"] = PyriBlocklyBlock(
+        name = "robot_planar_grab",
+        category = "Robotics",
+        doc = "Robot planar grab object",
+        json = """
+                {
+                "type": "robot_planar_grab",
+                "message0": "robot planar grab object using using reference %1 with speed %2 wait %3 %4 Z offset before grab %5 Z offset grab %6 object pose %7",
+                "args0": [
+                    {
+                    "type": "field_input",
+                    "name": "REFERENCE_POSE",
+                    "text": "reference_pose_global"
+                    },
+                    {
+                    "type": "field_number",
+                    "name": "SPEED",
+                    "value": 100,
+                    "min": 0,
+                    "max": 100,
+                    "precision": 1
+                    },
+                    {
+                    "type": "field_checkbox",
+                    "name": "WAIT",
+                    "checked": true
+                    },
+                    {
+                    "type": "input_dummy",
+                    "align": "RIGHT"
+                    },
+                    {
+                    "type": "input_value",
+                    "name": "Z_BEFORE",
+                    "align": "RIGHT"
+                    },
+                    {
+                    "type": "input_value",
+                    "name": "Z_GRAB",
+                    "align": "RIGHT"
+                    },
+                    {
+                    "type": "input_value",
+                    "name": "OBJECT_POSE",
+                    "align": "RIGHT"
+                    }
+                ],
+                "previousStatement": null,
+                "nextStatement": null,
+                "colour": 340,
+                "tooltip": "Get inverse of pose",
+                "helpUrl": ""
+                }
+               """,
+
+        python_generator = """
+                            Blockly.Python['robot_planar_grab'] = function(block) {
+                            var text_reference_pose = block.getFieldValue('REFERENCE_POSE');
+                            var number_speed = block.getFieldValue('SPEED');
+                            var checkbox_wait = block.getFieldValue('WAIT') == 'TRUE' ? 'True':'False';
+                            var value_z_before = Blockly.Python.valueToCode(block, 'Z_BEFORE', Blockly.Python.ORDER_ATOMIC);
+                            var value_z_grab = Blockly.Python.valueToCode(block, 'Z_GRAB', Blockly.Python.ORDER_ATOMIC);
+                            var value_object_pose = Blockly.Python.valueToCode(block, 'OBJECT_POSE', Blockly.Python.ORDER_ATOMIC);
+                            // TODO: Assemble JavaScript into code variable.
+                            var code = 'robot_planar_grab(' + value_object_pose+ ',\"' + text_reference_pose + '\",' + value_z_before + ',' + value_z_grab + ',' + number_speed + ',' + checkbox_wait + ')\\n';
+                            // TODO: Change ORDER_NONE to the correct strength.
+                            return code;
+                            };
+                           """
+    )
+
     return blocks
 
 def _get_categories() -> Dict[str,PyriBlocklyCategory]:
