@@ -346,6 +346,170 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                            """
     )
 
+    blocks["robot_planar_place"] = PyriBlocklyBlock(
+        name = "robot_planar_place",
+        category = "Robotics",
+        doc = "Robot planar place object",
+        json = """
+                {
+                "type": "robot_planar_place",
+                "message0": "robot planar place object using using reference %1 with speed %2 wait %3 %4 Z offset before place %5 Z offset place %6 target pose %7",
+                "args0": [
+                    {
+                    "type": "field_input",
+                    "name": "REFERENCE_POSE",
+                    "text": "reference_pose_global"
+                    },
+                    {
+                    "type": "field_number",
+                    "name": "SPEED",
+                    "value": 100,
+                    "min": 0,
+                    "max": 100,
+                    "precision": 1
+                    },
+                    {
+                    "type": "field_checkbox",
+                    "name": "WAIT",
+                    "checked": true
+                    },
+                    {
+                    "type": "input_dummy",
+                    "align": "RIGHT"
+                    },
+                    {
+                    "type": "input_value",
+                    "name": "Z_BEFORE",
+                    "align": "RIGHT"
+                    },
+                    {
+                    "type": "input_value",
+                    "name": "Z_PLACE",
+                    "align": "RIGHT"
+                    },
+                    {
+                    "type": "input_value",
+                    "name": "TARGET_POSE",
+                    "align": "RIGHT"
+                    }
+                ],
+                "previousStatement": null,
+                "nextStatement": null,
+                "colour": 340,
+                "tooltip": "Place an object at a planar location",
+                "helpUrl": ""
+                }
+               """,
+
+        python_generator = """
+                            Blockly.Python['robot_planar_place'] = function(block) {
+                            var text_reference_pose = block.getFieldValue('REFERENCE_POSE');
+                            var number_speed = block.getFieldValue('SPEED');
+                            var checkbox_wait = block.getFieldValue('WAIT') == 'TRUE' ? 'True':'False';
+                            var value_z_before = Blockly.Python.valueToCode(block, 'Z_BEFORE', Blockly.Python.ORDER_ATOMIC);
+                            var value_z_place = Blockly.Python.valueToCode(block, 'Z_PLACE', Blockly.Python.ORDER_ATOMIC);
+                            var value_target_pose = Blockly.Python.valueToCode(block, 'TARGET_POSE', Blockly.Python.ORDER_ATOMIC);
+                            // TODO: Assemble JavaScript into code variable.
+                            var code = 'robot_planar_place(' + value_target_pose+ ',\"' + text_reference_pose + '\",' + value_z_before + ',' + value_z_place + ',' + number_speed + ',' + checkbox_wait + ')\\n';
+                            // TODO: Change ORDER_NONE to the correct strength.
+                            return code;
+                            };
+                           """
+    )
+
+    blocks["robot_set_active_robot"] = PyriBlocklyBlock(
+        name = "robot_set_active_robot",
+        category = "Robotics",
+        doc = "Set active robot by device name",
+        json = """{
+                    "type": "robot_set_active_robot",
+                    "message0": "set active robot %1",
+                    "args0": [
+                        {
+                        "type": "field_input",
+                        "name": "ROBOT_NAME",
+                        "text": "robot"
+                        }
+                    ],
+                    "previousStatement": null,
+                    "nextStatement": null,
+                    "colour": 340,
+                    "tooltip": "Set active robot",
+                    "helpUrl": ""
+                    }""",
+        python_generator = """
+                            Blockly.Python['robot_set_active_robot'] = function(block) {
+                            var text_robot_name = block.getFieldValue('ROBOT_NAME');
+                            // TODO: Assemble Python into code variable.
+                            var code = 'robot_set_active_robot(\"' + text_robot_name + '\")\\n';
+                            return code;
+                            };
+                           """        
+    )
+
+    blocks["robot_set_origin_calibration"] = PyriBlocklyBlock(
+        name = "robot_set_origin_calibration",
+        category = "Robotics",
+        doc = "Set previously saved robot origin calibration",
+        json = """{
+                    "type": "robot_set_origin_calibration",
+                    "message0": "set robot origin calibration by name %1",
+                    "args0": [
+                        {
+                        "type": "field_input",
+                        "name": "ROBOT_CALIBRATION_NAME",
+                        "text": "robot_origin_calibration"
+                        }
+                    ],
+                    "previousStatement": null,
+                    "nextStatement": null,
+                    "colour": 340,
+                    "tooltip": "Set previously saved robot origin calibration",
+                    "helpUrl": ""
+                    }""",
+        python_generator = """
+                            Blockly.Python['robot_set_origin_calibration'] = function(block) {
+                            var text_robot_calibration_name = block.getFieldValue('ROBOT_CALIBRATION_NAME');
+                            // TODO: Assemble Python into code variable.
+                            var code = 'robot_set_origin_calibration(\"' + text_robot_calibration_name + '\")\\n';
+                            return code;
+                            };                            
+                           """        
+    )
+
+    blocks["robot_set_active_tool"] = PyriBlocklyBlock(
+        name = "robot_set_active_tool",
+        category = "Robotics",
+        doc = "Set active tool by device name",
+        json = """
+            {
+            "type": "robot_set_active_tool",
+            "message0": "set active tool %1",
+            "args0": [
+                {
+                "type": "field_input",
+                "name": "TOOL_NAME",
+                "text": "tool"
+                }
+            ],
+            "previousStatement": null,
+            "nextStatement": null,
+            "colour": 60,
+            "tooltip": "Set active tool",
+            "helpUrl": ""
+            }
+            """,
+            python_generator = """
+                                Blockly.Python['robot_set_active_tool'] = function(block) {
+                                var text_tool_name = block.getFieldValue('TOOL_NAME');
+                                // TODO: Assemble Python into code variable.
+                                var code = 'robot_set_active_tool(\"' + text_tool_name + '\")\\n';
+                                return code;
+                                };
+                               """
+
+    ) 
+
     return blocks
 
 def _get_categories() -> Dict[str,PyriBlocklyCategory]:

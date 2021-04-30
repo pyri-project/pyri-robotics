@@ -6,24 +6,65 @@ import numpy as np
 import time
 import general_robotics_toolbox as rox
 
+def robot_set_active_robot(robot_name):
+    PyriSandboxContext.context_vars["active_robot"] = robot_name
+
+def _get_active_robot_name():
+    # TODO: verify robot exists
+    if "active_robot" in PyriSandboxContext.context_vars:
+        return PyriSandboxContext.context_vars["active_robot"]
+    else:
+        return "robot"
+
+def robot_set_origin_calibration(calibration_name):
+    # TODO: verify robot and calibration_name exist
+    if "robot_origin_calibration" not in PyriSandboxContext.context_vars:
+        PyriSandboxContext.context_vars["robot_origin_calibration"] = dict()
+    PyriSandboxContext.context_vars["robot_origin_calibration"][_get_active_robot_name()] = calibration_name
+
+def _get_robot_origin_calibration():
+    robot_name = _get_active_robot_name()
+
+    if "robot_origin_calibration" not in PyriSandboxContext.context_vars:
+        return "robot_origin_calibration"
+    if robot_name not in PyriSandboxContext.context_vars["robot_origin_calibration"]:
+        return f"{robot_name}_origin_calibration"
+    return PyriSandboxContext.context_vars["robot_origin_calibration"][robot_name]
+
+def robot_set_active_tool(tool_name):
+    PyriSandboxContext.context_vars["active_tool"] = tool_name
+
+def _get_active_tool_name():
+    # TODO: verify robot exists
+    if "active_tool" in PyriSandboxContext.context_vars:
+        return PyriSandboxContext.context_vars["active_tool"]
+    else:
+        return "tool"
+
 def robot_jog_joint(dropdown_joint_selected ,value_degree, speed_perc):
+    robot_name = _get_active_robot_name()
 
     device_manager = PyriSandboxContext.device_manager
     jog_service = device_manager.get_device_client("robotics_jog", 1)
-    jog = jog_service.get_jog("robot")
+    jog = jog_service.get_jog(robot_name)
     jog.jog_joint_to_angle(dropdown_joint_selected-1, np.deg2rad(float(value_degree)), float(speed_perc))
 
 def robot_jog_joints(joint_pos_degree, speed_perc):
 
+    robot_name = _get_active_robot_name()
+
     device_manager = PyriSandboxContext.device_manager
     jog_service = device_manager.get_device_client("robotics_jog", 1)
-    jog = jog_service.get_jog("robot")
+    jog = jog_service.get_jog(robot_name)
     jog.jog_joints_to_angles2(np.deg2rad(joint_pos_degree), float(speed_perc))
 
 def robot_jog_pose(target_pose, speed_perc, frame):
+
+    robot_name = _get_active_robot_name()
+
     device_manager = PyriSandboxContext.device_manager
     jog_service = device_manager.get_device_client("robotics_jog", 1)
-    jog = jog_service.get_jog("robot")
+    jog = jog_service.get_jog(robot_name)
     geom_util = GeometryUtil(client_obj = jog_service)
     
     if frame =="ROBOT":
@@ -31,7 +72,7 @@ def robot_jog_pose(target_pose, speed_perc, frame):
     elif frame == "WORLD":
         var_storage = device_manager.get_device_client("variable_storage")
         # TODO: don't hard code robot origin
-        robot_origin_pose = var_storage.getf_variable_value("globals","robot_origin_calibration0").data
+        robot_origin_pose = var_storage.getf_variable_value("globals",_get_robot_origin_calibration()).data
         T_rob = geom_util.named_pose_to_rox_transform(robot_origin_pose.pose)
         T_des1 = geom_util.pose_to_rox_transform(target_pose)
         T_des = T_rob.inv() * T_des1
@@ -44,16 +85,20 @@ def robot_jog_pose(target_pose, speed_perc, frame):
     jog.jog_joints_to_pose(target_pose, float(speed_perc))
 
 def robot_get_joint_position():
+    robot_name = _get_active_robot_name()
+
     device_manager = PyriSandboxContext.device_manager
-    robot = device_manager.get_device_client("robot",1)
+    robot = device_manager.get_device_client(robot_name,1)
     robot_state, _ = robot.robot_state.PeekInValue()
 
     # TODO: don't convert to deg for prismatic joints
     return np.rad2deg(robot_state.joint_position).tolist()
 
 def robot_get_end_pose(frame):
+    robot_name = _get_active_robot_name()
+
     device_manager = PyriSandboxContext.device_manager
-    robot = device_manager.get_device_client("robot",1)
+    robot = device_manager.get_device_client(robot_name,1)
     robot_state, _ = robot.robot_state.PeekInValue()
 
     robot_util = RobotUtil(client_obj = robot)
@@ -68,7 +113,7 @@ def robot_get_end_pose(frame):
     elif frame == "WORLD":
         var_storage = device_manager.get_device_client("variable_storage")
         # TODO: don't hard code robot origin
-        robot_origin_pose = var_storage.getf_variable_value("globals","robot_origin_calibration0").data
+        robot_origin_pose = var_storage.getf_variable_value("globals",_get_robot_origin_calibration()).data
         T_rob = geom_util.named_pose_to_rox_transform(robot_origin_pose.pose)
         T2 = T_rob * T1
         return geom_util.rox_transform_to_pose(T2)
@@ -78,15 +123,22 @@ def robot_get_end_pose(frame):
 
 def robot_tool_gripper(dropdown_status):
 
+    tool_name = _get_active_tool_name()
+
     device_manager = PyriSandboxContext.device_manager
     jog_service = device_manager.get_device_client("robotics_jog", 1)
-    tool = jog_service.get_tool("tool")
+    tool = jog_service.get_tool(tool_name)
     if bool(int(dropdown_status)):
         tool.open()
     else:
         tool.close()
 
 def robot_planar_grab(object_pose, grab_reference_pose, z_offset_before, z_offset_grab, speed_perc, wait):
+
+    robot_name = _get_active_robot_name()
+    tool_name = _get_active_tool_name()
+    calib_name = _get_robot_origin_calibration()
+
     # TODO: Better detection of named pose
     if hasattr(object_pose, "pose"):
         object_pose = object_pose.pose
@@ -102,12 +154,40 @@ def robot_planar_grab(object_pose, grab_reference_pose, z_offset_before, z_offse
     device_manager = PyriSandboxContext.device_manager
     motion_service = device_manager.get_device_client("robotics_motion", 1)
     if is_pose2d:
-        gen = motion_service.grab_object_planar("robot", "tool", "robot_origin_calibration0", grab_reference_pose, object_pose,
+        gen = motion_service.grab_object_planar(robot_name, tool_name, calib_name, grab_reference_pose, object_pose,
              z_offset_before, z_offset_grab, speed_perc)
     else:
-        gen = motion_service.grab_object_planar2("robot", "tool", "robot_origin_calibration0", grab_reference_pose, object_pose,
+        gen = motion_service.grab_object_planar2(robot_name, tool_name, calib_name, grab_reference_pose, object_pose,
              z_offset_before, z_offset_grab, speed_perc)
-    PyriSandboxContext.action_runner.run_action("robot",gen,wait)
+    PyriSandboxContext.action_runner.run_action(robot_name,gen,wait)
+
+def robot_planar_place(target_pose, place_reference_pose, z_offset_before, z_offset_place, speed_perc, wait):
+
+    robot_name = _get_active_robot_name()
+    tool_name = _get_active_tool_name()
+    calib_name = _get_robot_origin_calibration()
+
+    # TODO: Better detection of named pose
+    if hasattr(target_pose, "pose"):
+        target_pose = target_pose.pose
+        if hasattr(target_pose, "pose"):
+            target_pose = target_pose.pose
+    
+    # TODO: Handle transform type as well?
+
+    is_pose2d = False
+    if "z" not in target_pose[0]["position"].dtype.names:
+        is_pose2d = True
+
+    device_manager = PyriSandboxContext.device_manager
+    motion_service = device_manager.get_device_client("robotics_motion", 1)
+    if is_pose2d:
+        gen = motion_service.place_object_planar(robot_name, tool_name, calib_name, place_reference_pose, target_pose,
+             z_offset_before, z_offset_place, speed_perc)
+    else:
+        gen = motion_service.place_object_planar2(robot_name, tool_name, calib_name, place_reference_pose, target_pose,
+             z_offset_before, z_offset_place, speed_perc)
+    PyriSandboxContext.action_runner.run_action(robot_name,gen,wait)
 
 
 def _get_sandbox_functions():
@@ -117,8 +197,12 @@ def _get_sandbox_functions():
         "robot_jog_pose": robot_jog_pose,
         "robot_tool_gripper": robot_tool_gripper,
         "robot_planar_grab": robot_planar_grab,
+        "robot_planar_place": robot_planar_place,
         "robot_get_joint_position": robot_get_joint_position,
-        "robot_get_end_pose": robot_get_end_pose
+        "robot_get_end_pose": robot_get_end_pose,
+        "robot_set_active_robot": robot_set_active_robot,
+        "robot_set_origin_calibration": robot_set_origin_calibration,
+        "robot_set_active_tool": robot_set_active_tool
     }
 
 class RoboticsSandboxFunctionsPluginFactory(PyriSandboxFunctionsPluginFactory):
