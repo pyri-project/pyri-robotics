@@ -8,6 +8,7 @@ import com.robotraconteur.geometry
 using com.robotraconteur.device.Device
 using com.robotraconteur.device.DeviceInfo
 using com.robotraconteur.geometry.SpatialVelocity
+using com.robotraconteur.geometry.Pose
 
 object JogRobot
     function void jog_joints(int32 q_i, int32 sign, double speed_perc)
@@ -20,6 +21,7 @@ object JogRobot
     function void disable_jog_joints_joystick()
 
     function void jog_cartesian(SpatialVelocity vel, double speed_perc, string frame)
+    function void jog_joints_to_pose(Pose pose, double speed_perc)
 
     function void enable_jog_cartesian_joystick(double speed_perc, string frame)
     function void disable_jog_cartesian_joystick()

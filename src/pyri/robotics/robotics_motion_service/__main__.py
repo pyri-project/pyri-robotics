@@ -240,6 +240,7 @@ class PickPlaceMotionGenerator:
                 ret.motion_state = motion_codes["motion_step_complete"]
                 ret.planned_motion = None
                 self._run_jog_freespace(self.q_grab, self.max_velocity*.25)
+                self.tool.close()
                 self._step = 4
                 return ret
             if self._step == 4:

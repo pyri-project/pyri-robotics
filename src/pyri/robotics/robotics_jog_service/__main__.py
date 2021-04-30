@@ -11,12 +11,14 @@ import importlib.resources as resources
 from RobotRaconteurCompanion.Util.InfoFileLoader import InfoFileLoader
 from RobotRaconteurCompanion.Util.AttributesUtil import AttributesUtil
 from RobotRaconteurCompanion.Util.RobotUtil import RobotUtil
+from RobotRaconteurCompanion.Util.GeometryUtil import GeometryUtil
 
 import time
 import threading
 import traceback
 import general_robotics_toolbox as rox
 from scipy.optimize import lsq_linear
+from ..util import invkin
 
 class RoboticsJog_impl(object):
     def __init__(self, parent, robot_sub):
@@ -417,6 +419,28 @@ class RoboticsJog_impl(object):
         q_dot = qdot_star
         
         return q_dot
+
+
+    def jog_joints_to_pose(self, pose, speed_perc):
+        print("Jog Joints to Pose is called")
+        # Similar to jog_joints_with_limits. But,
+        # Moves the robot to the specified joint angles with max speed
+        robot = self.robot
+        if robot is not None:
+            robot_state, _= self.robot.robot_state.PeekInValue()
+            q_current = robot_state.joint_position
+
+            geom_util = GeometryUtil(client_obj = robot)
+            T_des = geom_util.pose_to_rox_transform(pose)
+            
+            q_des, res = invkin.update_ik_info3(self.robot_rox, T_des, q_current)
+            assert res, "Inverse kinematics failed"
+
+            self.jog_joints_with_limits(q_des, float(speed_perc)*0.01*self.joint_vel_limits,True)
+
+        else:
+            # Give an error message to show that the robot is not connected
+            print("Robot is not connected to RoboticsJog service yet!")
 
 class JogTool_impl:
     def __init__(self, tool_sub):

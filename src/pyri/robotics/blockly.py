@@ -80,82 +80,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             };"""
     )
 
-    blocks["robot_jog_joint_relative"] = PyriBlocklyBlock(
-        name = "robot_jog_joint_relative",
-        category = "Robotics",
-        doc = "Jog joints",
-        json = """{
-                "type": "robot_jog_joint_relative",
-                "message0": "Jog Joint %1 relatively by degree %2 %3 with %4 %% speed",
-                "args0": [
-                    {
-                    "type": "field_dropdown",
-                    "name": "JOINT_SELECTED",
-                    "options": [
-                        [
-                        "1",
-                        "1"
-                        ],
-                        [
-                        "2",
-                        "2"
-                        ],
-                        [
-                        "3",
-                        "3"
-                        ],
-                        [
-                        "4",
-                        "4"
-                        ],
-                        [
-                        "5",
-                        "5"
-                        ],
-                        [
-                        "6",
-                        "6"
-                        ],
-                        [
-                        "7",
-                        "7"
-                        ]
-                    ]
-                    },
-                    {
-                    "type": "input_dummy"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "DEGREE",
-                    "check": "Number"
-                    },
-                    {
-                    "type": "field_number",
-                    "name": "SPEED",
-                    "value": 100,
-                    "min": 0,
-                    "max": 100,
-                    "precision": 1
-                    }
-                ],
-                "inputsInline": true,
-                "previousStatement": null,
-                "nextStatement": null,
-                "colour": 0,
-                "tooltip": "",
-                "helpUrl": ""
-                }""",
-        python_generator = """Blockly.Python['robot_jog_joint_relative'] = function(block) {
-                            var dropdown_joint_selected = block.getFieldValue('JOINT_SELECTED');
-                            var value_degree = Blockly.Python.valueToCode(block, 'DEGREE', Blockly.Python.ORDER_ATOMIC);
-                            var number_speed = block.getFieldValue('SPEED');
-                            
-                            var code = 'robot_jog_joint_relative(' + dropdown_joint_selected + ', ' + value_degree + ', ' + number_speed + ')\\n';
-                            return code;
-                            };"""
-    )
-
+    
     blocks["robot_jog_joints_absolute"] = PyriBlocklyBlock(
         name = "robot_jog_joints_absolute",
         category = "Robotics",
@@ -192,145 +117,125 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             };"""
     )
 
-    blocks["robot_jog_joints_relative"] = PyriBlocklyBlock(
-        name = "robot_jog_joints_relative",
+    
+    blocks["robot_jog_pose_absolute"] = PyriBlocklyBlock(
+        name = "robot_jog_pose_absolute",
         category = "Robotics",
-        doc = "Jog joints relatively",
+        doc = "Jog robot end effector to pose",
         json = """{
-            "type": "robot_jog_joints_relative",
-            "message0": "Jog Joints relatively with speed %1 degrees %2",
-            "args0": [
+                "type": "robot_jog_pose_absolute",
+                "message0": "Jog Cartesian with speed %1 in frame %2 to pose %3",
+                "args0": [
+                    {
+                    "type": "field_number",
+                    "name": "SPEED",
+                    "value": 100,
+                    "min": 0,
+                    "max": 100,
+                    "precision": 1
+                    },
+                    {
+                    "type": "field_dropdown",
+                    "name": "FRAME",
+                    "options": [
+                        [
+                        "world",
+                        "WORLD"
+                        ],
+                        [
+                        "robot",
+                        "ROBOT"
+                        ]
+                    ]
+                    },
+                    {
+                    "type": "input_value",
+                    "name": "ROBOT_POSE",
+                    "align": "RIGHT"
+                    }
+                ],
+                "previousStatement": null,
+                "nextStatement": null,
+                "colour": 340,
+                "tooltip": "Jog the robot to an end effector pose",
+                "helpUrl": ""
+                }""",
+        python_generator = """Blockly.Python['robot_jog_pose_absolute'] = function(block) {
+                            var number_speed = block.getFieldValue('SPEED');
+                            var value_robot_pose = Blockly.Python.valueToCode(block, 'ROBOT_POSE', Blockly.Python.ORDER_ATOMIC);
+                            var dropdown_frame = block.getFieldValue('FRAME');
+                            // TODO: Assemble Python into code variable.
+                            var code = 'robot_jog_pose(' + value_robot_pose + ', ' + number_speed + ',\"' + dropdown_frame + '\")\\n';
+                            return code;
+                            };
+                            """
+    )
+
+    blocks["robot_get_end_pose"] = PyriBlocklyBlock(
+        name = "robot_get_end_pose",
+        category = "Robotics",
+        doc = "Get robot end pose",
+        json = """
                 {
-                "type": "field_number",
-                "name": "SPEED",
-                "value": 100,
-                "min": 0,
-                "max": 100,
-                "precision": 1
-                },
-                {
-                "type": "input_value",
-                "name": "JOINT_DIFF_VECTOR"
+                "type": "robot_get_end_pose",
+                "message0": "get robot end pose in frame %1",
+                "args0": [
+                    {
+                    "type": "field_dropdown",
+                    "name": "FRAME",
+                    "options": [
+                        [
+                        "world",
+                        "WORLD"
+                        ],
+                        [
+                        "robot",
+                        "ROBOT"
+                        ]
+                    ]
+                    }
+                ],
+                "output": null,
+                "colour": 340,
+                "tooltip": "Get robot end pose in specified frame",
+                "helpUrl": ""
                 }
-            ],
-            "previousStatement": null,
-            "nextStatement": null,
-            "colour": 0,
-            "tooltip": "",
-            "helpUrl": ""
-            }""",
-        python_generator = """Blockly.Python['robot_jog_joints_relative'] = function(block) {
-                            
-                            var number_speed = block.getFieldValue('SPEED');
-                            var value_joint_vector = Blockly.Python.valueToCode(block, 'JOINT_DIFF_VECTOR', Blockly.Python.ORDER_ATOMIC);
-                            var code = 'robot_jog_joints_relative(' + value_joint_vector + ', ' + number_speed + ')\\n';
-                            return code;
-                            };"""
+               """,
+        python_generator = """
+                            Blockly.Python['robot_get_end_pose'] = function(block) {
+                            var dropdown_frame = block.getFieldValue('FRAME');
+                            // TODO: Assemble Python into code variable.     
+                            var code = 'robot_get_end_pose(\"' + dropdown_frame + '\")';
+                            // TODO: Change ORDER_NONE to the correct strength.
+                            return [code, Blockly.Python.ORDER_NONE];
+                            };
+                           """
     )
 
-    blocks["robot_jog_cartesian_absolute"] = PyriBlocklyBlock(
-        name = "robot_jog_cartesian_absolute",
+    blocks["robot_get_joint_position"] = PyriBlocklyBlock(
+        name = "robot_get_joint_position",
         category = "Robotics",
-        doc = "Jog joints",
-        json = """{
-                "type": "robot_jog_cartesian_absolute",
-                "lastDummyAlign0": "RIGHT",
-                "message0": "Jog Cartesian to: %1 Position %2 Orientation %3 with  %4 %% speed",
-                "args0": [
-                    {
-                    "type": "input_dummy",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "POSITION",
-                    "check": "position",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "ORIENTATION",
-                    "check": "orientation",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "field_number",
-                    "name": "SPEED",
-                    "value": 100,
-                    "min": 0,
-                    "max": 100,
-                    "precision": 1
-                    }
-                ],
-                "inputsInline": true,
-                "previousStatement": null,
-                "nextStatement": null,
+        doc = "Get robot joint position in deg or m",
+        json = """
+                {
+                "type": "robot_get_joint_position",
+                "message0": "get robot joint position",
+                "output": null,
                 "colour": 340,
-                "tooltip": "",
+                "tooltip": "Get robot joint position in deg or m",
                 "helpUrl": ""
-                }""",
-        python_generator = """Blockly.Python['robot_jog_cartesian_absolute'] = function(block) {
-                            var value_position = Blockly.Python.valueToCode(block, 'POSITION', Blockly.Python.ORDER_ATOMIC);
-                            var value_orientation = Blockly.Python.valueToCode(block, 'ORIENTATION', Blockly.Python.ORDER_ATOMIC);
-                            var number_speed = block.getFieldValue('SPEED');
-                            
-                            var code = 'robot_jog_cartesian('+ value_position + ',' + value_orientation +','+ number_speed +')\\n';
-                            return code;
+                }
+               """,
+        python_generator = """
+                            Blockly.Python['robot_get_joint_position'] = function(block) {
+                            // TODO: Assemble Python into code variable.
+                            var code = 'robot_get_joint_position()';
+                            // TODO: Change ORDER_NONE to the correct strength.
+                            return [code, Blockly.Python.ORDER_NONE];
                             };
-                            """
+                           """
     )
-
-    blocks["robot_jog_cartesian_relative"] = PyriBlocklyBlock(
-        name = "robot_jog_cartesian_relative",
-        category = "Robotics",
-        doc = "Jog joints",
-        json = """{
-                "type": "robot_jog_cartesian_relative",
-                "lastDummyAlign0": "RIGHT",
-                "message0": "Jog Cartesian Relatively: %1 Position %2 Orientation %3 with  %4 %% speed",
-                "args0": [
-                    {
-                    "type": "input_dummy",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "POSITION",
-                    "check": "position",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "ORIENTATION",
-                    "check": "orientation",
-                    "align": "RIGHT"
-                    },
-                    {
-                    "type": "field_number",
-                    "name": "SPEED",
-                    "value": 100,
-                    "min": 0,
-                    "max": 100,
-                    "precision": 1
-                    }
-                ],
-                "inputsInline": true,
-                "previousStatement": null,
-                "nextStatement": null,
-                "colour": 340,
-                "tooltip": "",
-                "helpUrl": ""
-                }""",
-        python_generator = """Blockly.Python['robot_jog_cartesian_relative'] = function(block) {
-                            var value_position = Blockly.Python.valueToCode(block, 'POSITION', Blockly.Python.ORDER_ATOMIC);
-                            var value_orientation = Blockly.Python.valueToCode(block, 'ORIENTATION', Blockly.Python.ORDER_ATOMIC);
-                            var number_speed = block.getFieldValue('SPEED');
-                            
-                            var code = 'robot_jog_cartesian_relative('+ value_position + ',' + value_orientation +','+ number_speed +')\\n';
-                            return code;
-                            };
-                            """
-    )
+    
     blocks["robot_tool_gripper"] = PyriBlocklyBlock(
         name = "robot_tool_gripper",
         category = "Robotics",
