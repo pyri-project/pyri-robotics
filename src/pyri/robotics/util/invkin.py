@@ -77,7 +77,7 @@ def update_ik_info3(robot_rox, T_desired, q_current): # inverse kinematics that 
         hist_b.append(b)
         if itr > 0:
             error_cur = np.linalg.norm(hist_b[itr-1]) - np.linalg.norm(hist_b[itr])
-            print("Error= " + str(error_cur))
+            #print("Error= " + str(error_cur))
         # DEBUG --------------
 
         res = lsq_linear(J0T,b)
@@ -108,8 +108,8 @@ def update_ik_info3(robot_rox, T_desired, q_current): # inverse kinematics that 
         # print( "converged? " + str(converged) ) # DEBUG
         
         itr += 1 # Increase the iteration
-        print(itr)
-        print(converged)
+        #print(itr)
+        #print(converged)
         # print(delta)
         # print(q_cur)
     
