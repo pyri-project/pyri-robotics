@@ -263,7 +263,9 @@ class PickPlaceMotionGenerator:
                 ret.action_status = action_codes["running"]
                 ret.motion_state = motion_codes["motion_step_complete"]
                 ret.planned_motion = None
-                self._run_jog_freespace(self.q_grab, self.max_velocity*.25)
+                self._run_jog_freespace(self.q_grab, self.max_velocity*.5)
+                # TODO: Don't use jog because it isn't accurate
+                time.sleep(0.5)
                 if self.grab:
                     self.tool.close()
                 else:
@@ -280,7 +282,9 @@ class PickPlaceMotionGenerator:
                 ret.action_status = action_codes["running"]
                 ret.motion_state = motion_codes["motion_step_complete"]
                 ret.planned_motion = None
-                self._run_jog_freespace(self.q_grab_before, self.max_velocity*.25)
+                self._run_jog_freespace(self.q_grab_before, self.max_velocity*.5)
+                # TODO: Don't use jog because it isn't accurate
+                time.sleep(0.5)
                 self._step = 6
                 return ret
             else:
