@@ -15,6 +15,7 @@ using com.robotraconteur.robotics.trajectory.JointTrajectory
 enum RobotMotionPlanarOpStateCode
     unknown = 0,
     motion_step_planned = 1,
+    motion_step_running,
     motion_step_complete,
     tool_close,
     tool_open,

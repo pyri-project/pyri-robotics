@@ -90,7 +90,7 @@ def update_ik_info3(robot_rox, T_desired, q_current): # inverse kinematics that 
 
         # find best step size to take
         # alpha=fminbound(min_alpha,0,1,args=(q_cur,qdot_star,Sawyer_def,Rd,pd,w,Kp))
-        alpha = 0.7 # Step size    # 1.0    
+        alpha = 0.85 # Step size    # 1.0    
         delta = alpha * qdot_star 
         # print_div( "<br> delta " + str(delta) ) # DEBUG
                     

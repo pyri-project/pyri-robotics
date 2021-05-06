@@ -278,20 +278,27 @@ class RoboticsMotion_impl(object):
         robot_state, _ = robot.robot_state.PeekInValue()
         q_current = robot_state.joint_position
 
-        # Compute inverse kinematics
-        q_grab_before, res = invkin.update_ik_info3(rox_robot, T_grab_pose_before_r, q_current)
-        assert res, "Invalid setpoint: invkin did not converge"
-        q_grab, res = invkin.update_ik_info3(rox_robot, T_grab_pose_r, q_current)
-        assert res, "Invalid setpoint: invkin did not converge"
+        ## Compute inverse kinematics
+        # q_grab_before, res = invkin.update_ik_info3(rox_robot, T_grab_pose_before_r, q_current)
+        # assert res, "Invalid setpoint: invkin did not converge"
+        # q_grab, res = invkin.update_ik_info3(rox_robot, T_grab_pose_r, q_current)
+        # assert res, "Invalid setpoint: invkin did not converge"
 
-        print(f"q_grab_before: {q_grab_before}")
-        print(f"q_grab: {q_grab}")
-        print()
+        # print(f"q_grab_before: {q_grab_before}")
+        # print(f"q_grab: {q_grab}")
+        # print()
 
-        max_velocity = rox_robot.joint_vel_limit * (speed_perc/100.0)
+        traj_before = self._generate_movel_trajectory(robot, rox_robot, q_current, T_grab_pose_before_r, speed_perc)
 
-        gen = PickPlaceMotionGenerator(robot, rox_robot, tool, q_grab_before,
-            q_grab, max_velocity, grab, self._node)
+        q_init_grab = traj_before.waypoints[-1].joint_position
+        traj_grab = self._generate_movel_trajectory(robot, rox_robot, q_init_grab, T_grab_pose_r, speed_perc)
+
+        q_init_after = traj_grab.waypoints[-1].joint_position
+        traj_after = self._generate_movel_trajectory(robot, rox_robot, q_init_after, T_grab_pose_before_r, speed_perc)
+        
+
+        gen = PickPlaceMotionGenerator(robot, rox_robot, tool, traj_before, traj_grab, traj_after,
+            grab, self._node)
 
         # robot.jog_freespace(q_grab_before,max_velocity,True)
         # time.sleep(0.5)
@@ -459,64 +466,70 @@ class TrajectoryMoveGenerator:
 
 class PickPlaceMotionGenerator:
 
-    def __init__(self, robot, rox_robot, tool, q_grab_before, q_grab, max_velocity, grab, node):
+    def __init__(self, robot, rox_robot, tool, traj_before, traj_grab, traj_after, grab, node):
         self.node = node
         self.robot = robot
         self.rox_robot = rox_robot
         self.tool = tool
-        self.q_grab_before = q_grab_before
-        self.q_grab = q_grab
-        self.max_velocity = max_velocity
+        self.traj_before = traj_before
+        self.traj_grab = traj_grab
+        self.traj_after = traj_after
         self.grab = grab
 
         self._wait_next_cv = threading.Condition()
         self._aborted = False
         self._closed = False
         self._step = 0
-        self._jog_done = False
-        self._jog_err = None
+        self._gen_next_done = False
+        self._gen_next_err = None
+        self._gen = None
 
         self._robot_motion_status = self.node.GetStructureType("tech.pyri.robotics.motion.RobotMotionPlanarOpStatus")
         self._action_consts = self.node.GetConstants("com.robotraconteur.action")
         self._motion_consts= self.node.GetConstants("tech.pyri.robotics.motion")
+        self._command_modes = self.node.GetConstants("com.robotraconteur.robotics.robot")["RobotCommandMode"]
 
     def Abort(self):
         with self._wait_next_cv:
+            if self._gen is not None:
+                self._gen.Abort()
             self._aborted = True
             self._wait_next_cv.notify_all()
     
     def Close(self):
         with self._wait_next_cv:
+            if self._gen is not None:
+                self._gen.Close()
             self._closed = True
             self._wait_next_cv.notify_all()
 
-    def _run_jog_freespace(self, q_desired, max_velocity):
+    # def _run_jog_freespace(self, q_desired, max_velocity):
 
-        def h(err):
-            with self._wait_next_cv:
-                self._jog_done = True
-                if err is not None:
-                    self._jog_err = err
-                self._wait_next_cv.notify_all()
+    #     def h(err):
+    #         with self._wait_next_cv:
+    #             self._jog_done = True
+    #             if err is not None:
+    #                 self._jog_err = err
+    #             self._wait_next_cv.notify_all()
 
-        self.robot.async_jog_freespace(q_desired, max_velocity, True, h,15)
+    #     self.robot.async_jog_freespace(q_desired, max_velocity, True, h,15)
         
-        while True:
-            if self._jog_done:
-                if self._jog_err:
-                    raise self._jog_err
-                else:
-                    break
-            if self._closed:
-                raise RR.StopIterationException("")
-            if self._aborted:
-                # Set robot to halt on abort to stop the robot
-                self.robot.command_mode = 0
-                raise RR.OperationAbortedException("")
-            self._wait_next_cv.wait(0.1)
+    #     while True:
+    #         if self._jog_done:
+    #             if self._jog_err:
+    #                 raise self._jog_err
+    #             else:
+    #                 break
+    #         if self._closed:
+    #             raise RR.StopIterationException("")
+    #         if self._aborted:
+    #             # Set robot to halt on abort to stop the robot
+    #             self.robot.command_mode = 0
+    #             raise RR.OperationAbortedException("")
+    #         self._wait_next_cv.wait(0.1)
 
-        # TODO: Is this necessary?
-        time.sleep(0.5)
+    #     # TODO: Is this necessary?
+    #     time.sleep(0.5)
 
     def Next(self):
         with self._wait_next_cv:
@@ -537,7 +550,7 @@ class PickPlaceMotionGenerator:
             if self._step == 0:
                 ret.action_status = action_codes["running"]
                 ret.motion_state = motion_codes["motion_step_planned"]
-                ret.planned_motion = self._fill_trajectory(self.q_grab_before)
+                ret.planned_motion = self.traj_before
                 self._step = 1
                 return ret
             if self._step == 1:
@@ -545,53 +558,115 @@ class PickPlaceMotionGenerator:
                 ret.motion_state = motion_codes["motion_step_complete"]
                 ret.planned_motion = None
                 self._step = 2
-                self._run_jog_freespace(self.q_grab_before, self.max_velocity)
+                self._execute_trajectory(self.traj_before)
                 return ret
             if self._step == 2:
+                move_finished = self._do_traj_next()
+                if not move_finished:
+                    ret.action_status = action_codes["running"]
+                    ret.motion_state = motion_codes["motion_step_running"]
+                    ret.planned_motion = self.traj_before
+                    return ret
                 ret.action_status = action_codes["running"]
-                ret.motion_state = motion_codes["motion_step_planned"]
-                ret.planned_motion = self._fill_trajectory(self.q_grab)
+                ret.motion_state = motion_codes["motion_step_complete"]
+                ret.planned_motion = None
                 self._step = 3
                 return ret
             if self._step == 3:
                 ret.action_status = action_codes["running"]
-                ret.motion_state = motion_codes["motion_step_complete"]
-                ret.planned_motion = None
-                self._run_jog_freespace(self.q_grab, self.max_velocity*.5)
-                # TODO: Don't use jog because it isn't accurate
-                time.sleep(0.5)
-                if self.grab:
-                    self.tool.close()
-                else:
-                    self.tool.open()
+                ret.motion_state = motion_codes["motion_step_planned"]
+                ret.planned_motion = self.traj_grab
                 self._step = 4
                 return ret
             if self._step == 4:
                 ret.action_status = action_codes["running"]
-                ret.motion_state = motion_codes["motion_step_planned"]
-                ret.planned_motion = self._fill_trajectory(self.q_grab_before)
+                ret.motion_state = motion_codes["motion_step_running"]
+                ret.planned_motion = self.traj_grab
+                self._execute_trajectory(self.traj_grab)
                 self._step = 5
                 return ret
             if self._step == 5:
+                move_finished = self._do_traj_next()
+                if not move_finished:
+                    ret.action_status = action_codes["running"]
+                    ret.motion_state = motion_codes["motion_step_running"]
+                    ret.planned_motion = self.traj_grab
+                    return ret
                 ret.action_status = action_codes["running"]
                 ret.motion_state = motion_codes["motion_step_complete"]
                 ret.planned_motion = None
-                self._run_jog_freespace(self.q_grab_before, self.max_velocity*.5)
-                # TODO: Don't use jog because it isn't accurate
+                if self.grab:
+                    self.tool.close()
+                else:
+                    self.tool.open()
                 time.sleep(0.5)
                 self._step = 6
+                return ret
+            if self._step == 6:
+                ret.action_status = action_codes["running"]
+                ret.motion_state = motion_codes["motion_step_planned"]
+                ret.planned_motion = self.traj_after
+                self._step = 7
+                return ret
+            if self._step == 7:
+                ret.action_status = action_codes["running"]
+                ret.motion_state = motion_codes["motion_step_running"]
+                ret.planned_motion = self.traj_after
+                self._execute_trajectory(self.traj_after)                
+                self._step = 8
+                return ret
+            if self._step == 8:
+                move_finished = self._do_traj_next()
+                if not move_finished:
+                    ret.action_status = action_codes["running"]
+                    ret.motion_state = motion_codes["motion_step_running"]
+                    ret.planned_motion = self.traj_after
+                    return ret
+                ret.action_status = action_codes["running"]
+                ret.motion_state = motion_codes["motion_step_complete"]
+                ret.planned_motion = None
+                self._step = 9
                 return ret
             else:
                 raise RR.StopIterationException("")
 
-    def _fill_trajectory(self,q_target):
-        # TODO: fill in the trajectory for viewer
-        return None
+    def _execute_trajectory(self, traj):
+        
+        robot_mode = self.robot.command_mode
+        self._gen_next_done = False
+        self._gen_next_err = None
 
+        if robot_mode != self._command_modes["trajectory"]:
+            self.robot.command_mode = self._command_modes["halt"]
+            time.sleep(0.005)
+            self.robot.command_mode = self._command_modes["trajectory"]
 
+        self.gen=self.robot.execute_trajectory(traj)
 
+    def _do_traj_next(self):
+        if self.gen is None:
+            return True
 
+        def h(res,err):
+            with self._wait_next_cv:
+                self._gen_next_done = True
+                if err is not None:
+                    self._gen_next_err = err
+                self._wait_next_cv.notify_all()
 
+        self.gen.AsyncNext(None,h)
+
+        while True:
+            if self._gen_next_done:
+                if self._gen_next_err:
+                    if isinstance(self._gen_next_err,RR.StopIterationException):
+                        return True
+                    raise self._gen_next_err
+                else:
+                    break
+            self._wait_next_cv.wait(0.1)
+
+        return False
 
 def main():
 
