@@ -85,6 +85,9 @@ class RoboticsMotion_impl(object):
         instance = algo.TOPPRA([pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel")
         jnt_traj = instance.compute_trajectory()
 
+        if jnt_traj is None:
+            return None
+
         ts_sample = np.linspace(0,jnt_traj.duration,N_samples)
         qs_sample = jnt_traj(ts_sample)
 
@@ -104,6 +107,8 @@ class RoboticsMotion_impl(object):
 
     def movej(self, robot_local_device_name, q_final, speed_perc):
         
+        # Convert to radians
+        q_final = np.deg2rad(q_final)
 
         robot = self.device_manager.get_device_client(robot_local_device_name)
         robot_info = robot.robot_info
@@ -114,6 +119,8 @@ class RoboticsMotion_impl(object):
         q_initial = robot_state.joint_position
 
         traj = self._generate_movej_trajectory(robot, rox_robot, q_initial, q_final, speed_perc)
+        if traj is None:
+            return EmptyGenerator()
 
         return TrajectoryMoveGenerator(robot, rox_robot, traj, self._node)
 
@@ -168,6 +175,9 @@ class RoboticsMotion_impl(object):
 
         instance = algo.TOPPRA([pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel")
         jnt_traj = instance.compute_trajectory()
+        
+        if jnt_traj is None:
+            return None
 
         ts_sample = np.linspace(0,jnt_traj.duration,N_samples)
         qs_sample = jnt_traj(ts_sample)
@@ -191,7 +201,7 @@ class RoboticsMotion_impl(object):
         robot = self.device_manager.get_device_client(robot_local_device_name)
         geom_util = GeometryUtil(client_obj = robot)
 
-        if frame.lower() == "global":
+        if frame.lower() == "world":
             var_storage = self.device_manager.get_device_client("variable_storage")            
             robot_origin_pose = var_storage.getf_variable_value("globals",robot_origin_calib_global_name).data
             T_rob = geom_util.named_pose_to_rox_transform(robot_origin_pose.pose)
@@ -211,6 +221,9 @@ class RoboticsMotion_impl(object):
         q_initial = robot_state.joint_position
 
         traj = self._generate_movel_trajectory(robot, rox_robot, q_initial, T_des, speed_perc)
+
+        if traj is None:
+            return EmptyGenerator()
 
         return TrajectoryMoveGenerator(robot, rox_robot, traj, self._node)
 
@@ -333,6 +346,19 @@ class RoboticsMotion_impl(object):
         return self._do_grab_place_object_planar(robot_local_device_name, tool_local_device_name, robot_origin_calib_global_name,
             reference_pose_global_name, object_x, object_y, object_theta, z_offset_before, z_offset_grab, speed_perc, False)
 
+
+class EmptyGenerator:
+    def __init__(self):
+        pass
+
+    def Next(self):
+        raise RR.StopIterationException("")
+
+    def Close(self):
+        pass
+
+    def Abort(self):
+        pass
 
 class TrajectoryMoveGenerator:
     def __init__(self, robot, rox_robot, trajectory, node):

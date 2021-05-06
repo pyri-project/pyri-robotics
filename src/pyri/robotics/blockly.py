@@ -3,91 +3,14 @@ from typing import List, Dict, NamedTuple, TYPE_CHECKING
 
 def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
     blocks = {}
-
-    blocks["robot_jog_joint_absolute"] = PyriBlocklyBlock(
-        name = "robot_jog_joint_absolute",
+        
+    blocks["robot_movej"] = PyriBlocklyBlock(
+        name = "robot_movej",
         category = "Robotics",
-        doc = "Jog joints",
+        doc = "Move joints to absolute position",
         json = """{
-                "type": "robot_jog_joint_absolute",
-                "message0": "Jog Joint %1 to degree %2 %3 with %4 %% speed",
-                "args0": [
-                    {
-                    "type": "field_dropdown",
-                    "name": "JOINT_SELECTED",
-                    "options": [
-                        [
-                        "1",
-                        "1"
-                        ],
-                        [
-                        "2",
-                        "2"
-                        ],
-                        [
-                        "3",
-                        "3"
-                        ],
-                        [
-                        "4",
-                        "4"
-                        ],
-                        [
-                        "5",
-                        "5"
-                        ],
-                        [
-                        "6",
-                        "6"
-                        ],
-                        [
-                        "7",
-                        "7"
-                        ]
-                    ]
-                    },
-                    {
-                    "type": "input_dummy"
-                    },
-                    {
-                    "type": "input_value",
-                    "name": "DEGREE",
-                    "check": "Number"
-                    },
-                    {
-                    "type": "field_number",
-                    "name": "SPEED",
-                    "value": 100,
-                    "min": 0,
-                    "max": 100,
-                    "precision": 1
-                    }
-                ],
-                "inputsInline": true,
-                "previousStatement": null,
-                "nextStatement": null,
-                "colour": 0,
-                "tooltip": "",
-                "helpUrl": ""
-                }""",
-        python_generator = """Blockly.Python['robot_jog_joint_absolute'] = function(block) {
-                            var dropdown_joint_selected = block.getFieldValue('JOINT_SELECTED');
-                            var value_degree = Blockly.Python.valueToCode(block, 'DEGREE', Blockly.Python.ORDER_ATOMIC);
-                            var number_speed = block.getFieldValue('SPEED');
-                            
-                            var code = 'robot_jog_joint(' + dropdown_joint_selected + ', ' + value_degree + ', ' + number_speed + ')\\n';
-                            return code;
-                            };"""
-    )
-
-    
-    blocks["robot_jog_joints_absolute"] = PyriBlocklyBlock(
-        name = "robot_jog_joints_absolute",
-        category = "Robotics",
-        doc = "Jog joints",
-        json = """{
-            "type": "robot_jog_joints_absolute",
-            "message0": "Jog Joints with speed %1 to degrees %2",
+            "type": "robot_movej",
+            "message0": "robot movej with speed %1 wait %2 to degrees %3",
             "args0": [
                 {
                 "type": "field_number",
@@ -96,6 +19,11 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                 "min": 0,
                 "max": 100,
                 "precision": 1
+                },
+                {
+                    "type": "field_checkbox",
+                    "name": "WAIT",
+                    "checked": true
                 },
                 {
                 "type": "input_value",
@@ -108,23 +36,23 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
             "tooltip": "",
             "helpUrl": ""
             }""",
-        python_generator = """Blockly.Python['robot_jog_joints_absolute'] = function(block) {
-                            
+        python_generator = """Blockly.Python['robot_movej'] = function(block) {
+                            var checkbox_wait = block.getFieldValue('WAIT') == 'TRUE' ? 'True':'False';
                             var number_speed = block.getFieldValue('SPEED');
                             var value_joint_vector = Blockly.Python.valueToCode(block, 'JOINT_VECTOR', Blockly.Python.ORDER_ATOMIC);
-                            var code = 'robot_jog_joints(' + value_joint_vector + ', ' + number_speed + ')\\n';
+                            var code = 'robot_movej(' + value_joint_vector + ', ' + number_speed + ',' + checkbox_wait + ')\\n';
                             return code;
                             };"""
     )
 
     
-    blocks["robot_jog_pose_absolute"] = PyriBlocklyBlock(
-        name = "robot_jog_pose_absolute",
+    blocks["robot_movel"] = PyriBlocklyBlock(
+        name = "robot_movel",
         category = "Robotics",
-        doc = "Jog robot end effector to pose",
+        doc = "Move robot along a line to absolute position",
         json = """{
-                "type": "robot_jog_pose_absolute",
-                "message0": "Jog Cartesian with speed %1 in frame %2 to pose %3",
+                "type": "robot_movel",
+                "message0": "robot movel with speed %1 in frame %2 wait %3 to pose %4",
                 "args0": [
                     {
                     "type": "field_number",
@@ -149,6 +77,11 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                     ]
                     },
                     {
+                        "type": "field_checkbox",
+                        "name": "WAIT",
+                        "checked": true
+                    },
+                    {
                     "type": "input_value",
                     "name": "ROBOT_POSE",
                     "align": "RIGHT"
@@ -157,15 +90,16 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                 "previousStatement": null,
                 "nextStatement": null,
                 "colour": 340,
-                "tooltip": "Jog the robot to an end effector pose",
+                "tooltip": "",
                 "helpUrl": ""
                 }""",
-        python_generator = """Blockly.Python['robot_jog_pose_absolute'] = function(block) {
+        python_generator = """Blockly.Python['robot_movel'] = function(block) {
+                            var checkbox_wait = block.getFieldValue('WAIT') == 'TRUE' ? 'True':'False';
                             var number_speed = block.getFieldValue('SPEED');
                             var value_robot_pose = Blockly.Python.valueToCode(block, 'ROBOT_POSE', Blockly.Python.ORDER_ATOMIC);
                             var dropdown_frame = block.getFieldValue('FRAME');
                             // TODO: Assemble Python into code variable.
-                            var code = 'robot_jog_pose(' + value_robot_pose + ', ' + number_speed + ',\"' + dropdown_frame + '\")\\n';
+                            var code = 'robot_movel(' + value_robot_pose + ', ' + number_speed + ',\"' + dropdown_frame + '\",' + checkbox_wait + ')\\n';
                             return code;
                             };
                             """

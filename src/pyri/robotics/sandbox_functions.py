@@ -41,48 +41,31 @@ def _get_active_tool_name():
     else:
         return "tool"
 
-def robot_jog_joint(dropdown_joint_selected ,value_degree, speed_perc):
-    robot_name = _get_active_robot_name()
-
-    device_manager = PyriSandboxContext.device_manager
-    jog_service = device_manager.get_device_client("robotics_jog", 1)
-    jog = jog_service.get_jog(robot_name)
-    jog.jog_joint_to_angle(dropdown_joint_selected-1, np.deg2rad(float(value_degree)), float(speed_perc))
-
-def robot_jog_joints(joint_pos_degree, speed_perc):
+def robot_movej(joint_pos_degree, speed_perc, wait):
 
     robot_name = _get_active_robot_name()
 
     device_manager = PyriSandboxContext.device_manager
-    jog_service = device_manager.get_device_client("robotics_jog", 1)
-    jog = jog_service.get_jog(robot_name)
-    jog.jog_joints_to_angles2(np.deg2rad(joint_pos_degree), float(speed_perc))
+    motion_service = device_manager.get_device_client("robotics_motion", 1)
+    move_gen = motion_service.movej(robot_name, joint_pos_degree, float(speed_perc))
 
-def robot_jog_pose(target_pose, speed_perc, frame):
+    PyriSandboxContext.action_runner.run_action(robot_name,move_gen,wait)
+
+def robot_movel(target_pose, speed_perc, frame, wait):
+
+    while hasattr(target_pose,"pose"):
+        target_pose = target_pose.pose
 
     robot_name = _get_active_robot_name()
+    robot_origin_calib = _get_robot_origin_calibration()
 
     device_manager = PyriSandboxContext.device_manager
-    jog_service = device_manager.get_device_client("robotics_jog", 1)
-    jog = jog_service.get_jog(robot_name)
-    geom_util = GeometryUtil(client_obj = jog_service)
+    motion_service = device_manager.get_device_client("robotics_motion", 1)
+    move_gen = motion_service.movel(robot_name, target_pose, frame, robot_origin_calib, float(speed_perc))
     
-    if frame =="ROBOT":
-        pass
-    elif frame == "WORLD":
-        var_storage = device_manager.get_device_client("variable_storage")
-        # TODO: don't hard code robot origin
-        robot_origin_pose = var_storage.getf_variable_value("globals",_get_robot_origin_calibration()).data
-        T_rob = geom_util.named_pose_to_rox_transform(robot_origin_pose.pose)
-        T_des1 = geom_util.pose_to_rox_transform(target_pose)
-        T_des = T_rob.inv() * T_des1
-        target_pose = geom_util.rox_transform_to_pose(T_des)
-    else:
-        assert False, "Invalid frame"
-
     # TODO: Tool frame
 
-    jog.jog_joints_to_pose(target_pose, float(speed_perc))
+    PyriSandboxContext.action_runner.run_action(robot_name,move_gen,wait)
 
 def robot_get_joint_position():
     robot_name = _get_active_robot_name()
@@ -191,10 +174,9 @@ def robot_planar_place(target_pose, place_reference_pose, z_offset_before, z_off
 
 
 def _get_sandbox_functions():
-    return {
-        "robot_jog_joint": robot_jog_joint,
-        "robot_jog_joints": robot_jog_joints,
-        "robot_jog_pose": robot_jog_pose,
+    return {       
+        "robot_movej": robot_movej,
+        "robot_movel": robot_movel,
         "robot_tool_gripper": robot_tool_gripper,
         "robot_planar_grab": robot_planar_grab,
         "robot_planar_place": robot_planar_place,
