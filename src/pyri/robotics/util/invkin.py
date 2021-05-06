@@ -24,12 +24,12 @@ def update_ik_info3(robot_rox, T_desired, q_current): # inverse kinematics that 
     converged = False
     while itr < max_steps and not converged:
         
-        pose = rox.fwdkin(robot_rox,q_cur)
+        pose = rox.fwdkin(robot_rox,q_cur.flatten())
         R_cur = pose.R
         p_cur = pose.p
         
         #calculate current Jacobian
-        J0T = rox.robotjacobian(robot_rox,q_cur)
+        J0T = rox.robotjacobian(robot_rox,q_cur.flatten())
         
         # Transform Jacobian to End effector frame from the base frame
         Tr = np.zeros((6,6))
@@ -124,11 +124,12 @@ def normalizeAngle(angle):
     :param angle: (float)
     :return: (float) the angle in [-pi, pi]
     """
-    while angle > np.pi:
-        angle -= 2 * np.pi
-    while angle < -np.pi:
-        angle += 2 * np.pi
-    return angle 
+    # while angle > np.pi:
+    #     angle -= 2 * np.pi
+    # while angle < -np.pi:
+    #     angle += 2 * np.pi
+    # return angle 
+    return angle
 
 def normalizeAngles(angles):
     for idx, angle in np.ndenumerate(angles):

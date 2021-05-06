@@ -17,7 +17,12 @@ from ..util import invkin
 import time
 import threading
 
+import toppra as ta
+import toppra.constraint as constraint
+import toppra.algorithm as algo
+
 from pyri.util.robotraconteur import add_default_ws_origins
+import math
 
 
 class RoboticsMotion_impl(object):
@@ -51,6 +56,163 @@ class RoboticsMotion_impl(object):
 
     def _device_removed(self, local_device_name):
         pass
+
+    def _generate_movej_trajectory(self, robot_client, rox_robot, q_initial, q_final, speed_perc):
+
+        JointTrajectoryWaypoint = RRN.GetStructureType("com.robotraconteur.robotics.trajectory.JointTrajectoryWaypoint",robot_client)
+        JointTrajectory = RRN.GetStructureType("com.robotraconteur.robotics.trajectory.JointTrajectory",robot_client)
+
+        dof = len(rox_robot.joint_type)
+
+        N_samples = math.ceil(np.max(np.abs(q_final-q_initial))*0.2*180/np.pi)
+        N_samples = np.max((N_samples,20))
+
+        ss = np.linspace(0,1,N_samples)
+
+        ss = np.linspace(0,1,N_samples)
+
+        way_pts = np.zeros((N_samples, dof), dtype=np.float64)
+        for i in range(dof):
+            way_pts[:,i] = np.linspace(q_initial[i], q_final[i], N_samples)
+
+        vlims = rox_robot.joint_vel_limit
+        alims = rox_robot.joint_acc_limit
+
+        path = ta.SplineInterpolator(ss, way_pts)
+        pc_vel = constraint.JointVelocityConstraint(vlims*0.95*(speed_perc/100.0))
+        pc_acc = constraint.JointAccelerationConstraint(alims)
+
+        instance = algo.TOPPRA([pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel")
+        jnt_traj = instance.compute_trajectory()
+
+        ts_sample = np.linspace(0,jnt_traj.duration,N_samples)
+        qs_sample = jnt_traj(ts_sample)
+
+        waypoints = []
+
+        for i in range(N_samples):
+            wp = JointTrajectoryWaypoint()
+            wp.joint_position = qs_sample[i,:]
+            wp.time_from_start = ts_sample[i]
+            waypoints.append(wp)
+
+        traj = JointTrajectory()
+        traj.joint_names = rox_robot.joint_names
+        traj.waypoints = waypoints
+
+        return traj
+
+    def movej(self, robot_local_device_name, q_final, speed_perc):
+        
+
+        robot = self.device_manager.get_device_client(robot_local_device_name)
+        robot_info = robot.robot_info
+        rox_robot = self._robot_util.robot_info_to_rox_robot(robot_info,0)
+
+        robot_state = robot.robot_state.PeekInValue()[0]
+
+        q_initial = robot_state.joint_position
+
+        traj = self._generate_movej_trajectory(robot, rox_robot, q_initial, q_final, speed_perc)
+
+        return TrajectoryMoveGenerator(robot, rox_robot, traj, self._node)
+
+    def _generate_movel_trajectory(self, robot_client, rox_robot, initial_q_or_T, T_final, speed_perc):
+
+        JointTrajectoryWaypoint = RRN.GetStructureType("com.robotraconteur.robotics.trajectory.JointTrajectoryWaypoint",robot_client)
+        JointTrajectory = RRN.GetStructureType("com.robotraconteur.robotics.trajectory.JointTrajectory",robot_client)
+
+        dof = len(rox_robot.joint_type)
+
+        if isinstance(initial_q_or_T,rox.Robot):
+            T_initial = initial_q_or_T
+            q_initial = invkin.update_ik_info3(rox_robot, initial_q_or_T, np.random.randn((dof,)))
+        else:
+            q_initial = initial_q_or_T
+            T_initial = rox.fwdkin(rox_robot, q_initial)
+
+        p_diff = T_final.p - T_initial.p
+        R_diff = np.transpose(T_initial.R) @ T_final.R
+        k,theta = rox.R2rot(R_diff)
+
+        N_samples_translate = np.linalg.norm(p_diff)*100.0
+        N_samples_rot = np.abs(theta)*0.25*180/np.pi
+
+        N_samples_translate = np.linalg.norm(p_diff)*100.0
+        N_samples_rot = np.abs(theta)*0.2*180/np.pi
+
+        N_samples = math.ceil(np.max((N_samples_translate,N_samples_rot,20)))
+
+        ss = np.linspace(0,1,N_samples)
+
+        q_final, res = invkin.update_ik_info3(rox_robot, T_final, q_initial)
+        assert res, "Inverse kinematics failed"
+
+        way_pts = np.zeros((N_samples, dof), dtype=np.float64)
+        way_pts[0,:] = q_initial
+        for i in range(1,N_samples):
+            s = float(i)/(N_samples-1)
+            R_i = T_initial.R @ rox.rot(k,theta * s)
+            p_i = (p_diff * s) + T_initial.p
+            T_i = rox.Transform(R_i,p_i)
+            q, res = invkin.update_ik_info3(rox_robot, T_i, way_pts[i-1,:])
+            assert res, "Inverse kinematics failed"
+            way_pts[i,:] = q
+
+        vlims = rox_robot.joint_vel_limit
+        alims = rox_robot.joint_acc_limit
+
+        path = ta.SplineInterpolator(ss, way_pts)
+        pc_vel = constraint.JointVelocityConstraint(vlims*0.95*speed_perc/100.0)
+        pc_acc = constraint.JointAccelerationConstraint(alims)
+
+        instance = algo.TOPPRA([pc_vel, pc_acc], path, parametrizer="ParametrizeConstAccel")
+        jnt_traj = instance.compute_trajectory()
+
+        ts_sample = np.linspace(0,jnt_traj.duration,N_samples)
+        qs_sample = jnt_traj(ts_sample)
+
+        waypoints = []
+
+        for i in range(N_samples):
+            wp = JointTrajectoryWaypoint()
+            wp.joint_position = qs_sample[i,:]
+            wp.time_from_start = ts_sample[i]
+            waypoints.append(wp)
+
+        traj = JointTrajectory()
+        traj.joint_names = rox_robot.joint_names
+        traj.waypoints = waypoints
+
+        return traj
+
+    def movel(self, robot_local_device_name, pose_final, frame, robot_origin_calib_global_name, speed_perc):
+        
+        robot = self.device_manager.get_device_client(robot_local_device_name)
+        geom_util = GeometryUtil(client_obj = robot)
+
+        if frame.lower() == "global":
+            var_storage = self.device_manager.get_device_client("variable_storage")            
+            robot_origin_pose = var_storage.getf_variable_value("globals",robot_origin_calib_global_name).data
+            T_rob = geom_util.named_pose_to_rox_transform(robot_origin_pose.pose)
+            T_des1 = geom_util.pose_to_rox_transform(pose_final)
+            T_des = T_rob.inv() * T_des1
+            pose_final = geom_util.rox_transform_to_pose(T_des)
+        elif frame.lower() == "robot":
+            T_des = geom_util.pose_to_rox_transform(pose_final)
+        else:
+            assert False, "Unknown parent frame for movel"        
+
+        robot_info = robot.robot_info
+        rox_robot = self._robot_util.robot_info_to_rox_robot(robot_info,0)
+
+        robot_state = robot.robot_state.PeekInValue()[0]
+
+        q_initial = robot_state.joint_position
+
+        traj = self._generate_movel_trajectory(robot, rox_robot, q_initial, T_des, speed_perc)
+
+        return TrajectoryMoveGenerator(robot, rox_robot, traj, self._node)
 
     def _do_grab_place_object_planar(self, robot_local_device_name, tool_local_device_name, robot_origin_calib_global_name,
         reference_pose_global_name, object_x, object_y, object_theta, z_offset_before, z_offset_grab, speed_perc, grab):
@@ -172,6 +334,103 @@ class RoboticsMotion_impl(object):
             reference_pose_global_name, object_x, object_y, object_theta, z_offset_before, z_offset_grab, speed_perc, False)
 
 
+class TrajectoryMoveGenerator:
+    def __init__(self, robot, rox_robot, trajectory, node):
+        self.node = node
+        self.robot = robot
+        self.rox_robot = rox_robot
+        self.trajectory = trajectory
+        self.gen = None
+        self._aborted = False
+        self._closed = False
+        self._lock = threading.Lock()
+        self._state = 0
+        self._ret_type = self.node.GetStructureType("tech.pyri.robotics.motion.RobotMoveOpStatus")
+        self._ret_codes = self.node.GetConstants("tech.pyri.robotics.motion")["RobotMoveOpStateCode"]
+        self._command_modes = self.node.GetConstants("com.robotraconteur.robotics.robot")["RobotCommandMode"]
+
+    def Next(self):
+        with self._lock:
+
+            if self._aborted:
+                raise RR.OperationAbortedException("")
+
+            if self._closed:
+                raise RR.StopIterationException("")
+
+            if self._state == self._ret_codes["unknown"]:
+                self._state = self._ret_codes["move_planned"]
+                ret = self._ret_type()
+                ret.action_status = 2
+                ret.planned_motion = self.trajectory
+                ret.current_waypoint = 0
+                ret.trajectory_time = 0.0
+                ret.move_state = self._state
+                return ret
+            
+            elif self._state == self._ret_codes["move_planned"]:
+                
+                robot_mode = self.robot.command_mode
+
+                if robot_mode != self._command_modes["trajectory"]:
+                    self.robot.command_mode = self._command_modes["halt"]
+                    time.sleep(0.005)
+                    self.robot.command_mode = self._command_modes["trajectory"]
+
+                self.gen=self.robot.execute_trajectory(self.trajectory)
+
+                self._state = self._ret_codes["moving"]
+
+                ret = self._ret_type()
+                ret.action_status = 2
+                ret.planned_motion = self.trajectory
+                ret.current_waypoint = 0
+                ret.trajectory_time = 0.0
+                ret.move_state = self._state
+                return ret
+
+            elif self._state == self._ret_codes["moving"]:
+
+                traj_done = False
+                gen_ret = None
+                try:
+                    gen_ret = self.gen.Next()
+                except RR.StopIterationException:
+                    traj_done = True
+
+                ret = self._ret_type()
+                ret.planned_motion = self.trajectory
+                if gen_ret is not None:
+                    ret.current_waypoint = gen_ret.current_waypoint
+                    ret.trajectory_time = gen_ret.trajectory_time
+                else:
+                    ret.current_waypoint = 0
+                    ret.trajectory_time = 0
+                if not traj_done:
+                    ret.action_status = 2
+                    ret.move_state = self._ret_codes["moving"]
+                else:
+                    self._closed = True
+                    ret.action_status = 3,
+                    ret.move_state = self._ret_codes["move_complete"]
+                    self._state = self._ret_codes["move_complete"]
+
+                return ret
+
+            assert False, "Invalid move generator state"
+
+    def Close(self):
+        with self._lock:
+            self._closed = True
+            if self.gen:
+                self.gen.Close()
+
+    def Abort(self):
+        with self._lock:
+            self._aborted = True
+            if self.gen:
+                self.gen.Abort()
+
 class PickPlaceMotionGenerator:
 
     def __init__(self, robot, rox_robot, tool, q_grab_before, q_grab, max_velocity, grab, node):
@@ -191,7 +450,7 @@ class PickPlaceMotionGenerator:
         self._jog_done = False
         self._jog_err = None
 
-        self._robot_motion_status = self.node.GetStructureType("tech.pyri.robotics.motion.RobotMotionStatus")
+        self._robot_motion_status = self.node.GetStructureType("tech.pyri.robotics.motion.RobotMotionPlanarOpStatus")
         self._action_consts = self.node.GetConstants("com.robotraconteur.action")
         self._motion_consts= self.node.GetConstants("tech.pyri.robotics.motion")
 
@@ -235,9 +494,16 @@ class PickPlaceMotionGenerator:
 
     def Next(self):
         with self._wait_next_cv:
+
+            if self._aborted:
+                raise RR.OperationAbortedException("")
+
+            if self._closed:
+                raise RR.StopIterationException("")
+
             ret = self._robot_motion_status()
             action_codes = self._action_consts["ActionStatusCode"]
-            motion_codes = self._motion_consts["RobotMotionStateCode"]
+            motion_codes = self._motion_consts["RobotMotionPlanarOpStateCode"]
             if self._aborted:
                 raise RR.OperationAbortedException("")
             if self._closed:
