@@ -14,7 +14,8 @@ setup(
     install_requires=[
         'pyri-common',
         'qpsolvers',
-        'scipy'
+        'scipy',
+        'toppra'
     ],
     tests_require=['pytest','pytest-asyncio'],
     extras_require={
