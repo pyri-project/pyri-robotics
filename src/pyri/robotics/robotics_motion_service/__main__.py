@@ -42,7 +42,10 @@ class RoboticsMotion_impl(object):
         self._geom_util = GeometryUtil(node=self._node)
         self._robot_util = RobotUtil(node=self._node)
 
-        self.device_manager = DeviceManagerClient(device_manager_url)
+        self.device_manager = DeviceManagerClient(device_manager_url, autoconnect=False)
+        self.device_manager.connect_device_type("com.robotraconteur.robotics.robot.Robot")
+        self.device_manager.connect_device_type("com.robotraconteur.robotics.tool.Tool")
+        self.device_manager.connect_device_type("tech.pyri.variable_storage.VariableStorage")
         self.device_manager.device_added += self._device_added
         self.device_manager.device_removed += self._device_removed
         self.device_manager.refresh_devices(5)

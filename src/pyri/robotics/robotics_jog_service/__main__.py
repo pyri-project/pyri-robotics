@@ -476,7 +476,10 @@ class RoboticsJogService_impl:
         self.service_path = None
         self.ctx = None
 
-        self._device_manager = DeviceManagerClient(device_manager_url)
+        self._device_manager = DeviceManagerClient(device_manager_url, autoconnect = False)
+        self._device_manager.connect_device_type("com.robotraconteur.robotics.robot.Robot")
+        self._device_manager.connect_device_type("com.robotraconteur.robotics.tool.Tool")
+        self._device_manager.connect_device_type("com.robotraconteur.hid.joystick.Joystick")
         self._device_manager.device_added += self._device_added
         self._device_manager.device_removed += self._device_removed
         self._device_manager.refresh_devices(5)
