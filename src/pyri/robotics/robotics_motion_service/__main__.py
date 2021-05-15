@@ -127,7 +127,7 @@ class RoboticsMotion_impl(object):
 
         return TrajectoryMoveGenerator(robot, rox_robot, traj, self._node)
 
-    def _generate_movel_trajectory(self, robot_client, rox_robot, initial_q_or_T, T_final, speed_perc):
+    def _generate_movel_trajectory(self, robot_client, rox_robot, initial_q_or_T, T_final, speed_perc, q_final_seed):
 
         JointTrajectoryWaypoint = RRN.GetStructureType("com.robotraconteur.robotics.trajectory.JointTrajectoryWaypoint",robot_client)
         JointTrajectory = RRN.GetStructureType("com.robotraconteur.robotics.trajectory.JointTrajectory",robot_client)
@@ -155,8 +155,11 @@ class RoboticsMotion_impl(object):
 
         ss = np.linspace(0,1,N_samples)
 
-        q_final, res = invkin.update_ik_info3(rox_robot, T_final, q_initial)
-        assert res, "Inverse kinematics failed"
+        if q_final_seed is None:
+            q_final, res = invkin.update_ik_info3(rox_robot, T_final, q_initial)
+        else:
+            q_final, res = invkin.update_ik_info3(rox_robot, T_final, q_final_seed)
+        #assert res, "Inverse kinematics failed"
 
         way_pts = np.zeros((N_samples, dof), dtype=np.float64)
         way_pts[0,:] = q_initial
@@ -165,7 +168,11 @@ class RoboticsMotion_impl(object):
             R_i = T_initial.R @ rox.rot(k,theta * s)
             p_i = (p_diff * s) + T_initial.p
             T_i = rox.Transform(R_i,p_i)
-            q, res = invkin.update_ik_info3(rox_robot, T_i, way_pts[i-1,:])
+            #try:
+            #    q, res = invkin.update_ik_info3(rox_robot, T_i, way_pts[i-1,:])
+            #except AssertionError:
+            ik_seed = (1.0-s)*q_initial + s*q_final
+            q, res = invkin.update_ik_info3(rox_robot, T_i, ik_seed)
             assert res, "Inverse kinematics failed"
             way_pts[i,:] = q
 
@@ -199,7 +206,7 @@ class RoboticsMotion_impl(object):
 
         return traj
 
-    def movel(self, robot_local_device_name, pose_final, frame, robot_origin_calib_global_name, speed_perc):
+    def movel(self, robot_local_device_name, pose_final, frame, robot_origin_calib_global_name, speed_perc, final_seed = None):
         
         robot = self.device_manager.get_device_client(robot_local_device_name)
         geom_util = GeometryUtil(client_obj = robot)
@@ -223,12 +230,45 @@ class RoboticsMotion_impl(object):
 
         q_initial = robot_state.joint_position
 
-        traj = self._generate_movel_trajectory(robot, rox_robot, q_initial, T_des, speed_perc)
+        traj = self._generate_movel_trajectory(robot, rox_robot, q_initial, T_des, speed_perc, final_seed)
 
         if traj is None:
             return EmptyGenerator()
 
         return TrajectoryMoveGenerator(robot, rox_robot, traj, self._node)
+
+    def _generate_movel_trajectory_tool_j_range(self, robot_client, rox_robot, initial_q_or_T, T_final, speed_perc, final_seed):
+
+        # Rotate joint 6 initial position to try to converge
+        try:
+            return self._generate_movel_trajectory(robot_client,rox_robot,initial_q_or_T,T_final,speed_perc,final_seed)
+        except AssertionError:
+            if not isinstance(initial_q_or_T,np.ndarray):
+               raise
+            #raise
+        p = final_seed
+        p1 = float(p[-1])
+        p2 = float(p[-1])
+        while True:
+            
+            if p1 > rox_robot.joint_upper_limit[-1] and p2 < rox_robot.joint_lower_limit[-1]:
+                assert False, "Could not solve inverse kinematics for grab or place operation"
+            p1 = p1 + np.deg2rad(30)
+            if p1 <= rox_robot.joint_upper_limit[-1]:
+                p[-1] = p1
+                try:
+                    res = self._generate_movel_trajectory(robot_client,rox_robot,initial_q_or_T,T_final,speed_perc,p)
+                    return res
+                except AssertionError:
+                    pass
+            p2 = p2 - np.deg2rad(30)
+            if p2 >= rox_robot.joint_lower_limit[-1]:
+                p[-1] = p2
+                try:
+                    res = self._generate_movel_trajectory(robot_client,rox_robot,initial_q_or_T,T_final,speed_perc,p)
+                    return res
+                except AssertionError:
+                    pass           
 
     def _do_grab_place_object_planar(self, robot_local_device_name, tool_local_device_name, robot_origin_calib_global_name,
         reference_pose_global_name, object_x, object_y, object_theta, z_offset_before, z_offset_grab, speed_perc, grab):
@@ -291,13 +331,14 @@ class RoboticsMotion_impl(object):
         # print(f"q_grab: {q_grab}")
         # print()
 
-        traj_before = self._generate_movel_trajectory(robot, rox_robot, q_current, T_grab_pose_before_r, speed_perc)
+        final_seed = np.deg2rad(reference_pose.data)
+        traj_before = self._generate_movel_trajectory_tool_j_range(robot, rox_robot, q_current, T_grab_pose_before_r, speed_perc, final_seed)
 
         q_init_grab = traj_before.waypoints[-1].joint_position
-        traj_grab = self._generate_movel_trajectory(robot, rox_robot, q_init_grab, T_grab_pose_r, speed_perc)
+        traj_grab = self._generate_movel_trajectory_tool_j_range(robot, rox_robot, q_init_grab, T_grab_pose_r, speed_perc, q_init_grab)
 
         q_init_after = traj_grab.waypoints[-1].joint_position
-        traj_after = self._generate_movel_trajectory(robot, rox_robot, q_init_after, T_grab_pose_before_r, speed_perc)
+        traj_after = self._generate_movel_trajectory_tool_j_range(robot, rox_robot, q_init_after, T_grab_pose_before_r, speed_perc, q_init_grab)
         
 
         gen = PickPlaceMotionGenerator(robot, rox_robot, tool, traj_before, traj_grab, traj_after,
@@ -446,6 +487,7 @@ class TrajectoryMoveGenerator:
                     ret.action_status = 2
                     ret.move_state = self._ret_codes["moving"]
                 else:
+                    _wait_for_robot_stop(self.robot)
                     self._closed = True
                     ret.action_status = 3,
                     ret.move_state = self._ret_codes["move_complete"]
@@ -661,6 +703,7 @@ class PickPlaceMotionGenerator:
 
         while True:
             if self._gen_next_done:
+                _wait_for_robot_stop(self.robot)
                 if self._gen_next_err:
                     if isinstance(self._gen_next_err,RR.StopIterationException):
                         return True
@@ -670,6 +713,36 @@ class PickPlaceMotionGenerator:
             self._wait_next_cv.wait(0.1)
 
         return False
+
+def _wait_for_robot_stop(robot):
+    iter_ = 0
+    last_pos = []
+    while(True):
+        iter_ += 1
+        if iter_ > 5000:
+            raise Exception("Robot did not stop moving after trajectory completion!")
+    
+        robot_state,_ = robot.robot_state.PeekInValue()
+
+        pos = robot_state.joint_position
+        if pos is None or len(pos) == 0:
+            raise Exception("Could not read robot joint positions")
+
+        last_pos.append(pos)
+        if len(last_pos) > 5:
+            last_pos.pop(0)
+
+        if len(last_pos) == 5:
+            err5=np.zeros((4,),dtype=np.float64)
+            for i in range(4):
+                err5[i] = np.max(np.abs(last_pos[i+1] - last_pos[0]))
+            
+            err = np.max(err5)
+            if err > 1e-3:
+                print(f"moving: err: {err}")
+            else:
+                break
+        time.sleep(0.005)
 
 def main():
 
