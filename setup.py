@@ -11,8 +11,8 @@ setup(
     packages=find_namespace_packages(where='src'),
     include_package_data=True,
     package_data = {
-        'pyri.robotics.robotics_jog_service': ['*.robdef'],
-        'pyri.robotics.robotics_motion_service': ['*.robdef']
+        'pyri.robotics.robotics_jog_service': ['*.robdef','*.yml'],
+        'pyri.robotics.robotics_motion_service': ['*.robdef','*.yml']
     },
     zip_safe=False,
     install_requires=[

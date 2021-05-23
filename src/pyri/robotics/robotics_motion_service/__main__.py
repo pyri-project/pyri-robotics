@@ -21,12 +21,12 @@ import toppra as ta
 import toppra.constraint as constraint
 import toppra.algorithm as algo
 
-from pyri.util.robotraconteur import add_default_ws_origins
+from pyri.util.service_setup import PyriServiceNodeSetup
 import math
 
 
 class RoboticsMotion_impl(object):
-    def __init__(self, device_manager_url, device_info = None, node: RR.RobotRaconteurNode = None):
+    def __init__(self, device_manager, device_info = None, node: RR.RobotRaconteurNode = None):
         if node is None:
             self._node = RR.RobotRaconteurNode.s
         else:
@@ -42,7 +42,7 @@ class RoboticsMotion_impl(object):
         self._geom_util = GeometryUtil(node=self._node)
         self._robot_util = RobotUtil(node=self._node)
 
-        self.device_manager = DeviceManagerClient(device_manager_url, autoconnect=False)
+        self.device_manager = device_manager
         self.device_manager.connect_device_type("com.robotraconteur.robotics.robot.Robot")
         self.device_manager.connect_device_type("com.robotraconteur.robotics.tool.Tool")
         self.device_manager.connect_device_type("tech.pyri.variable_storage.VariableStorage")
@@ -746,50 +746,19 @@ def _wait_for_robot_stop(robot):
 
 def main():
 
-    parser = argparse.ArgumentParser(description="PyRI Robotics Motion Service")
-    parser.add_argument("--device-info-file", type=argparse.FileType('r'),default=None,required=True,help="Device info file for robotics motion service (required)")
-    parser.add_argument('--device-manager-url', type=str, default=None,required=True,help="Robot Raconteur URL for device manager service (required)")
-    parser.add_argument("--wait-signal",action='store_const',const=True,default=False, help="wait for SIGTERM or SIGINT (Linux only)")
-    parser.add_argument("--pyri-webui-server-port",type=int,default=8000,help="The PyRI WebUI port for websocket origin (default 8000)")
-
-    args, _ = parser.parse_known_args()
-
-    RRC.RegisterStdRobDefServiceTypes(RRN)
-    RRN.RegisterServiceType(resources.read_text(__package__,'tech.pyri.robotics.motion.robdef'))
-
-    with args.device_info_file:
-        device_info_text = args.device_info_file.read()
-
-    info_loader = InfoFileLoader(RRN)
-    device_info, device_ident_fd = info_loader.LoadInfoFileFromString(device_info_text, "com.robotraconteur.device.DeviceInfo", "device")
-
-    attributes_util = AttributesUtil(RRN)
-    device_attributes = attributes_util.GetDefaultServiceAttributesFromDeviceInfo(device_info)
-
-    # RR.ServerNodeSetup("NodeName", TCP listen port, optional set of flags as parameters)
-    with RR.ServerNodeSetup("tech.pyri.robotics.motion", 55921) as node_setup:
-
-        add_default_ws_origins(node_setup.tcp_transport,args.pyri_webui_server_port)
-
+    with PyriServiceNodeSetup("tech.pyri.robotics.motion", 55921, \
+        extra_service_defs=[(__package__,'tech.pyri.robotics.motion.robdef')], \
+        default_info = (__package__,"pyri_robotics_motion_service_default_info.yml"), \
+        display_description="PyRI Robotics Motion Service", device_manager_autoconnect=False) as service_node_setup:
+        
         # create object
-        RoboticsMotion_inst = RoboticsMotion_impl(args.device_manager_url, device_info=device_info, node = RRN)
+        RoboticsMotion_inst = RoboticsMotion_impl(service_node_setup.device_manager, device_info=service_node_setup.device_info_struct, node = RRN)
         # register service with service name "robotics_motion", type "tech.pyri.robotics.motion.RoboticsMotionService",
         # actual object: VisionArucoDetection_inst
-        ctx = RRN.RegisterService("robotics_motion","tech.pyri.robotics.motion.RoboticsMotionService",RoboticsMotion_inst)
-        ctx.SetServiceAttributes(device_attributes)
+        service_node_setup.register_service("robotics_motion","tech.pyri.robotics.motion.RoboticsMotionService",RoboticsMotion_inst)
 
         #Wait for the user to shutdown the service
-        if args.wait_signal:
-            #Wait for shutdown signal if running in service mode
-            print("Press Ctrl-C to quit...")
-            import signal
-            signal.sigwait([signal.SIGTERM,signal.SIGINT])
-        else:
-            #Wait for the user to shutdown the service
-            if (sys.version_info > (3, 0)):
-                input("Server started, press enter to quit...")
-            else:
-                raw_input("Server started, press enter to quit...")
+        service_node_setup.wait_exit()
 
 if __name__ == '__main__':
     main()

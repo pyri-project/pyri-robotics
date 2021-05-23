@@ -20,7 +20,7 @@ import general_robotics_toolbox as rox
 from scipy.optimize import lsq_linear
 from ..util import invkin
 
-from pyri.util.robotraconteur import add_default_ws_origins
+from pyri.util.service_setup import PyriServiceNodeSetup
 
 class RoboticsJog_impl(object):
     def __init__(self, parent, robot_sub):
@@ -461,7 +461,7 @@ class JogTool_impl:
         self.tool_sub.GetDefaultClient().setf_command(command)
 
 class RoboticsJogService_impl:
-    def __init__(self, device_manager_url, device_info = None, node : RR.RobotRaconteurNode = None):
+    def __init__(self, device_manager, device_info = None, node : RR.RobotRaconteurNode = None):
         if node is None:
             self._node = RR.RobotRaconteurNode.s
         else:
@@ -476,7 +476,7 @@ class RoboticsJogService_impl:
         self.service_path = None
         self.ctx = None
 
-        self._device_manager = DeviceManagerClient(device_manager_url, autoconnect = False)
+        self._device_manager = device_manager
         self._device_manager.connect_device_type("com.robotraconteur.robotics.robot.Robot")
         self._device_manager.connect_device_type("com.robotraconteur.robotics.tool.Tool")
         self._device_manager.connect_device_type("com.robotraconteur.hid.joystick.Joystick")
@@ -555,52 +555,18 @@ class RoboticsJogService_impl:
     
 def main():
 
-    parser = argparse.ArgumentParser(description="PyRI Jog Joint Service")    
-    parser.add_argument("--device-info-file", type=argparse.FileType('r'),default=None,required=True,help="Device info file for devices states service (required)")
-    parser.add_argument('--device-manager-url', type=str, default=None,required=True,help="Robot Raconteur URL for device manager service (required)")
-    parser.add_argument("--wait-signal",action='store_const',const=True,default=False, help="wait for SIGTERM or SIGINT (Linux only)")
-    parser.add_argument("--pyri-webui-server-port",type=int,default=8000,help="The PyRI WebUI port for websocket origin (default 8000)")
-    
-    args, _ = parser.parse_known_args()
-
-    RRC.RegisterStdRobDefServiceTypes(RRN)
-    RRN.RegisterServiceType(resources.read_text(__package__,'tech.pyri.robotics.jog.robdef'))
-
-    with args.device_info_file:
-        device_info_text = args.device_info_file.read()
-
-    info_loader = InfoFileLoader(RRN)
-    device_info, device_ident_fd = info_loader.LoadInfoFileFromString(device_info_text, "com.robotraconteur.device.DeviceInfo", "device")
-
-    attributes_util = AttributesUtil(RRN)
-    device_attributes = attributes_util.GetDefaultServiceAttributesFromDeviceInfo(device_info)
-
-
     # RR.ServerNodeSetup("NodeName", TCP listen port, optional set of flags as parameters)
-    with RR.ServerNodeSetup("tech.pyri.robotics.jog", 55906) as node_setup:
+    with PyriServiceNodeSetup("tech.pyri.robotics.jog", 55906, \
+        extra_service_defs=[(__package__,'tech.pyri.robotics.jog.robdef')], \
+        default_info = (__package__,"pyri_robotics_jog_service_default_info.yml"), \
+        display_description="PyRI Jog Joint Service", device_manager_autoconnect=False) as service_node_setup:
         
-        add_default_ws_origins(node_setup.tcp_transport,args.pyri_webui_server_port)
-        # register service type
-        
-
         # create object
-        RoboticsJogService_inst = RoboticsJogService_impl(args.device_manager_url, device_info=device_info, node = RRN)
+        RoboticsJogService_inst = RoboticsJogService_impl(service_node_setup.device_manager, device_info=service_node_setup.device_info_struct, node = RRN)
         # register service with service name "robotics_jog", type "tech.pyri.robotics.jog.RoboticsJogService", actual object: RoboticsJogService_inst
-        ctx = RRN.RegisterService("robotics_jog","tech.pyri.robotics.jog.RoboticsJogService",RoboticsJogService_inst)
-        ctx.SetServiceAttributes(device_attributes)
-
-        if args.wait_signal:  
-            #Wait for shutdown signal if running in service mode          
-            print("Press Ctrl-C to quit...")
-            import signal
-            signal.sigwait([signal.SIGTERM,signal.SIGINT])
-        else:
-            #Wait for the user to shutdown the service
-            if (sys.version_info > (3, 0)):
-                input("Server started, press enter to quit...")
-            else:
-                raw_input("Server started, press enter to quit...")
-
+        service_node_setup.register_service("robotics_jog","tech.pyri.robotics.jog.RoboticsJogService",RoboticsJogService_inst)
+        
+        service_node_setup.wait_exit()
 
 if __name__ == '__main__':
     main()
