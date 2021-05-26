@@ -2,8 +2,8 @@ from pyri.plugins.service_node_launch import ServiceNodeLaunch, PyriServiceNodeL
 
 
 launches = [
-    ServiceNodeLaunch("robotics_jog", "pyri.robotics", "pyri.robotics.robotics_jog_service", default_devices=[("pyri_robotics_jog","robotics_jog")]),
-    ServiceNodeLaunch("robotics_motion", "pyri.robotics", "pyri.robotics.robotics_motion_service", default_devices=[("pyri_robotics_motion","robotics_motion")]),
+    ServiceNodeLaunch("robotics_jog", "pyri.robotics", "pyri.robotics.robotics_jog_service", default_devices=[("pyri_robotics_jog_service","robotics_jog")]),
+    ServiceNodeLaunch("robotics_motion", "pyri.robotics", "pyri.robotics.robotics_motion_service", default_devices=[("pyri_robotics_motion_service","robotics_motion")]),
 ]
 
 class RoboticsLaunchFactory(PyriServiceNodeLaunchFactory):
