@@ -1,5 +1,7 @@
 service tech.pyri.robotics.motion
 
+stdver 0.10
+
 import com.robotraconteur.device
 import com.robotraconteur.geometry
 import com.robotraconteur.action
@@ -64,4 +66,6 @@ object RoboticsMotionService
 
     function RobotMotionPlanarOpStatus{generator} place_object_planar2(string robot_local_device_name, string tool_local_device_name, string robot_origin_calib_global_name, \
         string reference_pose_global_name, Pose target_world_pose, double z_offset_before, double z_offset_place, double speed_perc)
+
+    function RobotMoveOpStatus{generator} move_joint_trajectory(string robot_local_device_name, JointTrajectory trajectory, double speed_perc)
 end
