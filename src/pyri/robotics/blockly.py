@@ -105,6 +105,50 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                             """
     )
 
+    blocks["robot_move_joint_trajectory"] = PyriBlocklyBlock(
+        name = "robot_move_joint_trajectory",
+        category = "Robotics",
+        doc = "Execute a previously planned joint trajectory",
+        json = """{
+                    "type": "robot_move_joint_trajectory",
+                    "message0": "robot execute with speed %1 wait %2 joint trajectory %3",
+                    "args0": [
+                        {
+                        "type": "field_number",
+                        "name": "SPEED",
+                        "value": 100,
+                        "min": 0,
+                        "max": 100,
+                        "precision": 1
+                        },
+                        {
+                        "type": "field_checkbox",
+                        "name": "WAIT",
+                        "checked": true
+                        },
+                        {
+                        "type": "input_value",
+                        "name": "TRAJECTORY"
+                        }
+                    ],
+                    "previousStatement": null,
+                    "nextStatement": null,
+                    "colour": 0,
+                    "tooltip": "execute a previously generated joint trajectory",
+                    "helpUrl": ""
+                    }""",
+        python_generator = """
+                            Blockly.Python['robot_move_joint_trajectory'] = function(block) {
+                            var number_speed = block.getFieldValue('SPEED');
+                            var checkbox_wait = block.getFieldValue('WAIT') == 'TRUE' ? 'True':'False';
+                            var value_trajectory = Blockly.Python.valueToCode(block, 'TRAJECTORY', Blockly.Python.ORDER_ATOMIC);
+                            // TODO: Assemble Python into code variable.
+                            var code = 'robot_move_joint_trajectory(' + value_trajectory + ', ' + number_speed + ',' + checkbox_wait + ')\\n';
+                            return code;
+                            };
+                            """
+    )
+
     blocks["robot_get_end_pose"] = PyriBlocklyBlock(
         name = "robot_get_end_pose",
         category = "Robotics",

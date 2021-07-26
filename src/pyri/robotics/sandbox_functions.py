@@ -67,6 +67,16 @@ def robot_movel(target_pose, speed_perc, frame, wait):
 
     PyriSandboxContext.action_runner.run_action(robot_name,move_gen,wait)
 
+def robot_move_joint_trajectory(joint_trajectory, speed_perc, wait):
+
+    robot_name = _get_active_robot_name()
+
+    device_manager = PyriSandboxContext.device_manager
+    motion_service = device_manager.get_device_client("robotics_motion", 1)
+    move_gen = motion_service.move_joint_trajectory(robot_name, joint_trajectory, float(speed_perc))
+    
+    PyriSandboxContext.action_runner.run_action(robot_name,move_gen,wait)
+
 def robot_get_joint_position():
     robot_name = _get_active_robot_name()
 
@@ -177,6 +187,7 @@ def _get_sandbox_functions():
     return {       
         "robot_movej": robot_movej,
         "robot_movel": robot_movel,
+        "robot_move_joint_trajectory": robot_move_joint_trajectory,
         "robot_tool_gripper": robot_tool_gripper,
         "robot_planar_grab": robot_planar_grab,
         "robot_planar_place": robot_planar_place,

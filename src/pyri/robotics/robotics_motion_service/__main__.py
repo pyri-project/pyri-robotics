@@ -397,7 +397,23 @@ class RoboticsMotion_impl(object):
         return self._do_grab_place_object_planar(robot_local_device_name, tool_local_device_name, robot_origin_calib_global_name,
             reference_pose_global_name, object_x, object_y, object_theta, z_offset_before, z_offset_grab, speed_perc, False)
 
+    def move_joint_trajectory(self, robot_local_device_name, trajectory, speed_perc):
+        
+        if speed_perc != 100.0:
+            t_scale = 100.0/speed_perc
+            traj2 = copy.deepcopy(trajectory)
 
+            for wp in traj2.waypoints:
+                wp.time_from_start *= t_scale
+
+            trajectory = traj2
+
+        robot = self.device_manager.get_device_client(robot_local_device_name)
+
+        robot_info = robot.robot_info
+        rox_robot = self._robot_util.robot_info_to_rox_robot(robot_info,0)        
+
+        return TrajectoryMoveGenerator(robot, rox_robot, trajectory, self._node)
 class EmptyGenerator:
     def __init__(self):
         pass
