@@ -559,7 +559,8 @@ def main():
     with PyriServiceNodeSetup("tech.pyri.robotics.jog", 55906, \
         extra_service_defs=[(__package__,'tech.pyri.robotics.jog.robdef')], \
         default_info = (__package__,"pyri_robotics_jog_service_default_info.yml"), \
-        display_description="PyRI Jog Joint Service", device_manager_autoconnect=False) as service_node_setup:
+        display_description="PyRI Jog Joint Service", device_manager_autoconnect=False, \
+        distribution_name="pyri-robotics") as service_node_setup:
         
         # create object
         RoboticsJogService_inst = RoboticsJogService_impl(service_node_setup.device_manager, device_info=service_node_setup.device_info_struct, node = RRN)
