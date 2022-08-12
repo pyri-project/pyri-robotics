@@ -1,14 +1,14 @@
-from pyri.plugins.blockly import PyriBlocklyPluginFactory, PyriBlocklyBlock, PyriBlocklyCategory
+from pyri.plugins.blockly import PyriBlocklyPluginFactory, PyriBlocklyBlock, PyriBlocklyCategory, \
+    add_blockly_block, add_blockly_category
+from . import sandbox_functions
 from typing import List, Dict, NamedTuple, TYPE_CHECKING
 
 def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
     blocks = {}
         
-    blocks["robot_movej"] = PyriBlocklyBlock(
-        name = "robot_movej",
+    add_blockly_block(blocks,
         category = "Robotics",
-        doc = "Move joints to absolute position",
-        json = """{
+        blockly_json = {
             "type": "robot_movej",
             "message0": "robot movej with speed %1 wait %2 to degrees %3",
             "args0": [
@@ -23,34 +23,26 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                 {
                     "type": "field_checkbox",
                     "name": "WAIT",
-                    "checked": true
+                    "checked": True
                 },
                 {
                 "type": "input_value",
                 "name": "JOINT_VECTOR"
                 }
             ],
-            "previousStatement": null,
-            "nextStatement": null,
+            "previousStatement": None,
+            "nextStatement": None,
             "colour": 0,
-            "tooltip": "",
+            "tooltip": "Move joints to absolute position",
             "helpUrl": ""
-            }""",
-        python_generator = """Blockly.Python['robot_movej'] = function(block) {
-                            var checkbox_wait = block.getFieldValue('WAIT') == 'TRUE' ? 'True':'False';
-                            var number_speed = block.getFieldValue('SPEED');
-                            var value_joint_vector = Blockly.Python.valueToCode(block, 'JOINT_VECTOR', Blockly.Python.ORDER_ATOMIC);
-                            var code = 'robot_movej(' + value_joint_vector + ', ' + number_speed + ',' + checkbox_wait + ')\\n';
-                            return code;
-                            };"""
+            },
+        sandbox_function = (sandbox_functions.robot_movej,"JOINT_VECTOR","SPEED","WAIT")
     )
 
     
-    blocks["robot_movel"] = PyriBlocklyBlock(
-        name = "robot_movel",
+    add_blockly_block(blocks,
         category = "Robotics",
-        doc = "Move robot along a line to absolute position",
-        json = """{
+        blockly_json = {
                 "type": "robot_movel",
                 "message0": "robot movel with speed %1 in frame %2 wait %3 to pose %4",
                 "args0": [
@@ -79,7 +71,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                     {
                         "type": "field_checkbox",
                         "name": "WAIT",
-                        "checked": true
+                        "checked": True
                     },
                     {
                     "type": "input_value",
@@ -87,29 +79,18 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                     "align": "RIGHT"
                     }
                 ],
-                "previousStatement": null,
-                "nextStatement": null,
+                "previousStatement": None,
+                "nextStatement": None,
                 "colour": 340,
-                "tooltip": "",
+                "tooltip": "Move robot along a line to absolute position",
                 "helpUrl": ""
-                }""",
-        python_generator = """Blockly.Python['robot_movel'] = function(block) {
-                            var checkbox_wait = block.getFieldValue('WAIT') == 'TRUE' ? 'True':'False';
-                            var number_speed = block.getFieldValue('SPEED');
-                            var value_robot_pose = Blockly.Python.valueToCode(block, 'ROBOT_POSE', Blockly.Python.ORDER_ATOMIC);
-                            var dropdown_frame = block.getFieldValue('FRAME');
-                            // TODO: Assemble Python into code variable.
-                            var code = 'robot_movel(' + value_robot_pose + ', ' + number_speed + ',\"' + dropdown_frame + '\",' + checkbox_wait + ')\\n';
-                            return code;
-                            };
-                            """
+                },
+        sandbox_function = (sandbox_functions.robot_movel,"ROBOT_POSE","FRAME","SPEED","WAIT")
     )
 
-    blocks["robot_move_joint_trajectory"] = PyriBlocklyBlock(
-        name = "robot_move_joint_trajectory",
+    add_blockly_block(blocks,
         category = "Robotics",
-        doc = "Execute a previously planned joint trajectory",
-        json = """{
+        blockly_json = {
                     "type": "robot_move_joint_trajectory",
                     "message0": "robot execute with speed %1 wait %2 joint trajectory %3",
                     "args0": [
@@ -124,37 +105,25 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                         {
                         "type": "field_checkbox",
                         "name": "WAIT",
-                        "checked": true
+                        "checked": True
                         },
                         {
                         "type": "input_value",
                         "name": "TRAJECTORY"
                         }
                     ],
-                    "previousStatement": null,
-                    "nextStatement": null,
+                    "previousStatement": None,
+                    "nextStatement": None,
                     "colour": 0,
-                    "tooltip": "execute a previously generated joint trajectory",
+                    "tooltip": "Execute a previously planned joint trajectory",
                     "helpUrl": ""
-                    }""",
-        python_generator = """
-                            Blockly.Python['robot_move_joint_trajectory'] = function(block) {
-                            var number_speed = block.getFieldValue('SPEED');
-                            var checkbox_wait = block.getFieldValue('WAIT') == 'TRUE' ? 'True':'False';
-                            var value_trajectory = Blockly.Python.valueToCode(block, 'TRAJECTORY', Blockly.Python.ORDER_ATOMIC);
-                            // TODO: Assemble Python into code variable.
-                            var code = 'robot_move_joint_trajectory(' + value_trajectory + ', ' + number_speed + ',' + checkbox_wait + ')\\n';
-                            return code;
-                            };
-                            """
+                    },
+        sandbox_function = (sandbox_functions.robot_move_joint_trajectory,"TRAJECTORY","SPEED","WAIT")
     )
 
-    blocks["robot_get_end_pose"] = PyriBlocklyBlock(
-        name = "robot_get_end_pose",
+    add_blockly_block(blocks,
         category = "Robotics",
-        doc = "Get robot end pose",
-        json = """
-                {
+        blockly_json = {
                 "type": "robot_get_end_pose",
                 "message0": "get robot end pose in frame %1",
                 "args0": [
@@ -173,52 +142,30 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                     ]
                     }
                 ],
-                "output": null,
+                "output": None,
                 "colour": 340,
                 "tooltip": "Get robot end pose in specified frame",
                 "helpUrl": ""
-                }
-               """,
-        python_generator = """
-                            Blockly.Python['robot_get_end_pose'] = function(block) {
-                            var dropdown_frame = block.getFieldValue('FRAME');
-                            // TODO: Assemble Python into code variable.     
-                            var code = 'robot_get_end_pose(\"' + dropdown_frame + '\")';
-                            // TODO: Change ORDER_NONE to the correct strength.
-                            return [code, Blockly.Python.ORDER_NONE];
-                            };
-                           """
+                },
+        sandbox_function = (sandbox_functions.robot_get_end_pose,"FRAME")
     )
 
-    blocks["robot_get_joint_position"] = PyriBlocklyBlock(
-        name = "robot_get_joint_position",
+    add_blockly_block(blocks,
         category = "Robotics",
-        doc = "Get robot joint position in deg or m",
-        json = """
-                {
+        blockly_json = {
                 "type": "robot_get_joint_position",
                 "message0": "get robot joint position",
-                "output": null,
+                "output": None,
                 "colour": 340,
                 "tooltip": "Get robot joint position in deg or m",
                 "helpUrl": ""
-                }
-               """,
-        python_generator = """
-                            Blockly.Python['robot_get_joint_position'] = function(block) {
-                            // TODO: Assemble Python into code variable.
-                            var code = 'robot_get_joint_position()';
-                            // TODO: Change ORDER_NONE to the correct strength.
-                            return [code, Blockly.Python.ORDER_NONE];
-                            };
-                           """
+                },
+        sandbox_function = (sandbox_functions.robot_get_joint_position,)
     )
     
-    blocks["robot_tool_gripper"] = PyriBlocklyBlock(
-        name = "robot_tool_gripper",
+    add_blockly_block(blocks,
         category = "Robotics",
-        doc = "Robot Gripper Tool",
-        json = """{
+        blockly_json = {
                 "type": "robot_tool_gripper",
                 "message0": "Gripper %1",
                 "args0": [
@@ -237,28 +184,18 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                     ]
                     }
                 ],
-                "previousStatement": null,
-                "nextStatement": null,
+                "previousStatement": None,
+                "nextStatement": None,
                 "colour": 60,
-                "tooltip": "Change the Gripper Mode",
+                "tooltip": "Open or close the gripper",
                 "helpUrl": ""
-                }""",
-        python_generator = """Blockly.Python['robot_tool_gripper'] = function(block) {
-                            var dropdown_gripper_status = block.getFieldValue('GRIPPER_STATUS');
-                            // TODO: Assemble Python into code variable.
-                            var code = 'robot_tool_gripper(' + dropdown_gripper_status + ')\\n';
-                            return code;
-                            };
-                            """
-        
+                },
+        sandbox_function = (sandbox_functions.robot_tool_gripper,"GRIPPER_STATUS")        
     )
 
-    blocks["robot_planar_grab"] = PyriBlocklyBlock(
-        name = "robot_planar_grab",
+    add_blockly_block(blocks,
         category = "Robotics",
-        doc = "Robot planar grab object",
-        json = """
-                {
+        blockly_json = {
                 "type": "robot_planar_grab",
                 "message0": "robot planar grab object using using reference %1 with speed %2 wait %3 %4 Z offset before grab %5 Z offset grab %6 object pose %7",
                 "args0": [
@@ -278,7 +215,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                     {
                     "type": "field_checkbox",
                     "name": "WAIT",
-                    "checked": true
+                    "checked": True
                     },
                     {
                     "type": "input_dummy",
@@ -300,36 +237,18 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                     "align": "RIGHT"
                     }
                 ],
-                "previousStatement": null,
-                "nextStatement": null,
+                "previousStatement": None,
+                "nextStatement": None,
                 "colour": 340,
-                "tooltip": "Get inverse of pose",
+                "tooltip": "Robot planar grab object",
                 "helpUrl": ""
-                }
-               """,
-
-        python_generator = """
-                            Blockly.Python['robot_planar_grab'] = function(block) {
-                            var text_reference_pose = block.getFieldValue('REFERENCE_POSE');
-                            var number_speed = block.getFieldValue('SPEED');
-                            var checkbox_wait = block.getFieldValue('WAIT') == 'TRUE' ? 'True':'False';
-                            var value_z_before = Blockly.Python.valueToCode(block, 'Z_BEFORE', Blockly.Python.ORDER_ATOMIC);
-                            var value_z_grab = Blockly.Python.valueToCode(block, 'Z_GRAB', Blockly.Python.ORDER_ATOMIC);
-                            var value_object_pose = Blockly.Python.valueToCode(block, 'OBJECT_POSE', Blockly.Python.ORDER_ATOMIC);
-                            // TODO: Assemble JavaScript into code variable.
-                            var code = 'robot_planar_grab(' + value_object_pose+ ',\"' + text_reference_pose + '\",' + value_z_before + ',' + value_z_grab + ',' + number_speed + ',' + checkbox_wait + ')\\n';
-                            // TODO: Change ORDER_NONE to the correct strength.
-                            return code;
-                            };
-                           """
+                },
+        sandbox_function = (sandbox_functions.robot_planar_grab,"OBJECT_POSE","REFERENCE_POSE","Z_BEFORE","Z_GRAB","SPEED","WAIT")
     )
 
-    blocks["robot_planar_place"] = PyriBlocklyBlock(
-        name = "robot_planar_place",
+    add_blockly_block(blocks,
         category = "Robotics",
-        doc = "Robot planar place object",
-        json = """
-                {
+        blockly_json = {
                 "type": "robot_planar_place",
                 "message0": "robot planar place object using using reference %1 with speed %2 wait %3 %4 Z offset before place %5 Z offset place %6 target pose %7",
                 "args0": [
@@ -349,7 +268,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                     {
                     "type": "field_checkbox",
                     "name": "WAIT",
-                    "checked": true
+                    "checked": True
                     },
                     {
                     "type": "input_dummy",
@@ -371,35 +290,18 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                     "align": "RIGHT"
                     }
                 ],
-                "previousStatement": null,
-                "nextStatement": null,
+                "previousStatement": None,
+                "nextStatement": None,
                 "colour": 340,
                 "tooltip": "Place an object at a planar location",
                 "helpUrl": ""
-                }
-               """,
-
-        python_generator = """
-                            Blockly.Python['robot_planar_place'] = function(block) {
-                            var text_reference_pose = block.getFieldValue('REFERENCE_POSE');
-                            var number_speed = block.getFieldValue('SPEED');
-                            var checkbox_wait = block.getFieldValue('WAIT') == 'TRUE' ? 'True':'False';
-                            var value_z_before = Blockly.Python.valueToCode(block, 'Z_BEFORE', Blockly.Python.ORDER_ATOMIC);
-                            var value_z_place = Blockly.Python.valueToCode(block, 'Z_PLACE', Blockly.Python.ORDER_ATOMIC);
-                            var value_target_pose = Blockly.Python.valueToCode(block, 'TARGET_POSE', Blockly.Python.ORDER_ATOMIC);
-                            // TODO: Assemble JavaScript into code variable.
-                            var code = 'robot_planar_place(' + value_target_pose+ ',\"' + text_reference_pose + '\",' + value_z_before + ',' + value_z_place + ',' + number_speed + ',' + checkbox_wait + ')\\n';
-                            // TODO: Change ORDER_NONE to the correct strength.
-                            return code;
-                            };
-                           """
+                },
+        sandbox_function = (sandbox_functions.robot_planar_place,"TARGET_POSE","REFERENCE_POSE","Z_BEFORE","Z_PLACE","SPEED","WAIT")
     )
 
-    blocks["robot_set_active_robot"] = PyriBlocklyBlock(
-        name = "robot_set_active_robot",
+    add_blockly_block(blocks,
         category = "Robotics",
-        doc = "Set active robot by device name",
-        json = """{
+        blockly_json = {
                     "type": "robot_set_active_robot",
                     "message0": "set active robot %1",
                     "args0": [
@@ -409,27 +311,18 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                         "text": "robot"
                         }
                     ],
-                    "previousStatement": null,
-                    "nextStatement": null,
+                    "previousStatement": None,
+                    "nextStatement": None,
                     "colour": 340,
-                    "tooltip": "Set active robot",
+                    "tooltip": "Set active robot by device name",
                     "helpUrl": ""
-                    }""",
-        python_generator = """
-                            Blockly.Python['robot_set_active_robot'] = function(block) {
-                            var text_robot_name = block.getFieldValue('ROBOT_NAME');
-                            // TODO: Assemble Python into code variable.
-                            var code = 'robot_set_active_robot(\"' + text_robot_name + '\")\\n';
-                            return code;
-                            };
-                           """        
+                    },
+        sandbox_function = (sandbox_functions.robot_set_active_robot,"ROBOT_NAME")  
     )
 
-    blocks["robot_set_origin_calibration"] = PyriBlocklyBlock(
-        name = "robot_set_origin_calibration",
+    add_blockly_block(blocks,
         category = "Robotics",
-        doc = "Set previously saved robot origin calibration",
-        json = """{
+        blockly_json = {
                     "type": "robot_set_origin_calibration",
                     "message0": "set robot origin calibration by name %1",
                     "args0": [
@@ -439,28 +332,18 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                         "text": "robot_origin_calibration"
                         }
                     ],
-                    "previousStatement": null,
-                    "nextStatement": null,
+                    "previousStatement": None,
+                    "nextStatement": None,
                     "colour": 340,
                     "tooltip": "Set previously saved robot origin calibration",
                     "helpUrl": ""
-                    }""",
-        python_generator = """
-                            Blockly.Python['robot_set_origin_calibration'] = function(block) {
-                            var text_robot_calibration_name = block.getFieldValue('ROBOT_CALIBRATION_NAME');
-                            // TODO: Assemble Python into code variable.
-                            var code = 'robot_set_origin_calibration(\"' + text_robot_calibration_name + '\")\\n';
-                            return code;
-                            };                            
-                           """        
+                    },
+        sandbox_function = (sandbox_functions.robot_set_origin_calibration,"ROBOT_CALIBRATION_NAME")       
     )
 
-    blocks["robot_set_active_tool"] = PyriBlocklyBlock(
-        name = "robot_set_active_tool",
+    add_blockly_block(blocks,
         category = "Robotics",
-        doc = "Set active tool by device name",
-        json = """
-            {
+        blockly_json = {
             "type": "robot_set_active_tool",
             "message0": "set active tool %1",
             "args0": [
@@ -470,32 +353,20 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                 "text": "tool"
                 }
             ],
-            "previousStatement": null,
-            "nextStatement": null,
+            "previousStatement": None,
+            "nextStatement": None,
             "colour": 60,
-            "tooltip": "Set active tool",
+            "tooltip": "Set active tool by device name",
             "helpUrl": ""
-            }
-            """,
-            python_generator = """
-                                Blockly.Python['robot_set_active_tool'] = function(block) {
-                                var text_tool_name = block.getFieldValue('TOOL_NAME');
-                                // TODO: Assemble Python into code variable.
-                                var code = 'robot_set_active_tool(\"' + text_tool_name + '\")\\n';
-                                return code;
-                                };
-                               """
-
+            },
+            sandbox_function = (sandbox_functions.robot_set_active_tool,"TOOL_NAME")
     ) 
 
     return blocks
 
 def _get_categories() -> Dict[str,PyriBlocklyCategory]:
     categories = {}
-    categories["Robotics"] = PyriBlocklyCategory(
-        name = "Robotics",
-        json = '{"kind": "category", "name": "Robotics", "colour": 0 }'
-    )
+    add_blockly_category(categories,"Robotics",0)
 
     return categories
 
