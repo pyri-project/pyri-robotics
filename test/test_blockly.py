@@ -279,13 +279,13 @@ def test_blockly_compiler_robotics():
         "# Describe this function...\n" \
         "def my_procedure():\n" \
         "\n" \
-        "  robot_movej(var1, float(100), true)\n" \
-        "  robot_movel(var1, \"WORLD\", float(100), true)\n" \
+        "  robot_movej(var1, float(100), True)\n" \
+        "  robot_movel(var1, \"WORLD\", float(100), True)\n" \
         "  var1 = robot_get_end_pose(\"WORLD\")\n" \
         "  var1 = robot_get_joint_position()\n" \
         "  robot_tool_gripper(\"0\")\n" \
-        "  robot_planar_grab(var4, \"reference_pose_global_aaa\", var2, var3, float(100), true)\n" \
-        "  robot_planar_place(var4, \"reference_pose_global_bbb\", var2, var3, float(100), true)\n" \
+        "  robot_planar_grab(var4, \"reference_pose_global_aaa\", var2, var3, float(100), True)\n" \
+        "  robot_planar_place(var4, \"reference_pose_global_bbb\", var2, var3, float(100), True)\n" \
         "  robot_set_active_robot(\"robot_ccc\")\n" \
         "  robot_set_origin_calibration(\"robot_origin_calibration_ddd\")\n" \
         "  robot_set_active_tool(\"tool_eee\")\n" \
