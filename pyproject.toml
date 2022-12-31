@@ -1,0 +1,57 @@
+[project]
+
+name = "pyri-robotics"
+version = "0.1.0"
+description = "PyRI Teach Pendant Robotics Plugin"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE.txt"}
+keywords = ["pyodide", "pyri-project", "pyri-runtime-package", "robotics"]
+authors = [
+    {name = "John Wason", email = "wason@wasontech.com"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Scientific/Engineering"
+]
+
+dependencies = [
+    'pyri-common',
+    'qpsolvers',
+    'scipy',
+    'toppra'
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-asyncio"
+]
+
+[project.urls]
+homepage="http://pyri.tech"
+repository="https://github.com/pyri-project/pyri-robotics"
+
+[project.scripts]
+pyri-robotics-jog-service = "pyri.robotics.robotics_jog_service.__main__:main"
+pyri-robotics-motion-service = "pyri.robotics.robotics_motion_service.__main__:main"
+
+[project.entry-points."pyri.plugins.service_node_launch"]
+pyri-robotics-launch = "pyri.robotics.service_node_launch:get_service_node_launch_factory"
+
+[project.entry-points."pyri.plugins.device_type_adapter"]
+pyri-robotics-type-adapter = "pyri.robotics.device_type_adapter:get_device_type_adapter_factory"
+
+[project.entry-points."pyri.plugins.sandbox_functions"]
+pyri-robotics-sandbox-functions = "pyri.robotics.sandbox_functions:get_sandbox_functions_factory"
+
+[project.entry-points."pyri.plugins.blockly"]
+pyri-robotics-plugin-blockly = "pyri.robotics.blockly:get_blockly_factory"
+
+[build-system]
+build-backend = 'setuptools.build_meta'
+requires = [
+    'setuptools',
+    'toml',
+]
