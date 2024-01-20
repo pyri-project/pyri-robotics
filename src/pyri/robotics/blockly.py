@@ -85,7 +85,7 @@ def _get_blocks() -> Dict[str,PyriBlocklyBlock]:
                 "tooltip": "Move robot along a line to absolute position",
                 "helpUrl": ""
                 },
-        sandbox_function = (sandbox_functions.robot_movel,"ROBOT_POSE","FRAME","SPEED","WAIT")
+        sandbox_function = (sandbox_functions.robot_movel,"ROBOT_POSE","SPEED","FRAME","WAIT")
     )
 
     add_blockly_block(blocks,
