@@ -61,16 +61,32 @@ class RoboticsMotion_impl(object):
         pass
 
     def _generate_movej_trajectory(self, robot_client, rox_robot, q_initial, q_final, speed_perc):
+        traj = self._generate_movej_trajectory2(robot_client, rox_robot, q_initial, q_final, speed_perc, None)
+                
+        t_diff = []
+        for i in range(len(traj.waypoints)-1):
+            t_diff.append(traj.waypoints[i+1].time_from_start - traj.waypoints[i].time_from_start)
+
+        max_tdiff = np.max(t_diff)
+        if max_tdiff <= 1e-2:
+            return traj
+        
+        N_samples = int(np.ceil(max_tdiff*20))*len(traj.waypoints)
+        traj = self._generate_movej_trajectory2(robot_client, rox_robot, q_initial, q_final, speed_perc, N_samples)
+        return traj
+
+                  
+
+    def _generate_movej_trajectory2(self, robot_client, rox_robot, q_initial, q_final, speed_perc, N_samples):
 
         JointTrajectoryWaypoint = RRN.GetStructureType("com.robotraconteur.robotics.trajectory.JointTrajectoryWaypoint",robot_client)
         JointTrajectory = RRN.GetStructureType("com.robotraconteur.robotics.trajectory.JointTrajectory",robot_client)
 
         dof = len(rox_robot.joint_type)
 
-        N_samples = math.ceil(np.max(np.abs(q_final-q_initial))*0.2*180/np.pi)
-        N_samples = np.max((N_samples,20))
-
-        ss = np.linspace(0,1,N_samples)
+        if N_samples is None:
+            N_samples = math.ceil(np.max(np.abs(q_final-q_initial))*0.2*180/np.pi)
+            N_samples = np.max((N_samples,20))
 
         ss = np.linspace(0,1,N_samples)
 
