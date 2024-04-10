@@ -1,7 +1,7 @@
 [project]
 
 name = "pyri-robotics"
-version = "0.2.0"
+version = "0.3.0"
 description = "PyRI Teach Pendant Robotics Plugin"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -20,7 +20,9 @@ dependencies = [
     'pyri-common',
     'qpsolvers',
     'scipy',
-    'toppra'
+    'toppra',
+    'RobotRaconteur>=1.2.0',
+    'RobotRaconteurCompanion>=0.4.0',
 ]
 
 [project.optional-dependencies]
@@ -55,3 +57,7 @@ requires = [
     'setuptools',
     'toml',
 ]
+
+[tool.setuptools.package-data]
+'pyri.robotics.robotics_jog_service' = ['*.robdef','*.yml']
+'pyri.robotics.robotics_motion_service' = ['*.robdef','*.yml']
